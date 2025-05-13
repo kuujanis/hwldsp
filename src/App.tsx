@@ -3,7 +3,7 @@ import {Layer, LayerProps, Map, Source} from '@vis.gl/react-maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import './App.css'
 import { FilterSpecification, GeoJSONFeature, MapLayerMouseEvent } from 'maplibre-gl';
-import { Select, Slider, Switch } from 'antd';
+import { ConfigProvider, InputNumber, Select, Slider, Switch } from 'antd';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title } from "chart.js";
 import { Bar, Doughnut } from "react-chartjs-2";
 import { accumulateValues, extractObjects, indexOfMax } from './utils/utils';
@@ -31,6 +31,43 @@ const emptyGeoJSON:GeoJSON = {
   }, 
   features: []
 }
+
+const darkTheme = {
+  token: {
+    colorBgBase: '#000000',       // Black background
+    colorTextBase: '#ffffff',     // White text
+    colorPrimary: '#ffffff',      // White primary
+    colorBorder: '#424242',       // Gray borders
+    colorBorderSecondary: '#333', // Darker borders
+  },
+  components: {
+    // --- Slider (Range) ---
+    Slider: {
+      trackBg: '#ffffff',         // White track (filled part)
+      railBg: '#424242',          // Gray rail (background)
+      handleColor: '#ffffff',      // White handle
+      handleActiveColor: '#bdbdbd', // Light gray when dragging
+      trackHoverBg: '#e0e0e0',    // Light gray hover
+      dotBorderColor: '#424242',   // Dots on the rail
+    },
+    // --- Select ---
+    Select: {
+      optionSelectedBg: '#333',    // Dark gray selected option
+      optionActiveBg: '#1e1e1e',   // Slightly lighter hover
+      colorBgContainer: '#000000', // Black dropdown background
+      colorText: '#ffffff',        // White text
+      colorBorder: '#424242',      // Gray border
+      colorPrimaryHover: '#e0e0e0',// Light gray hover
+    },
+    // --- Switch ---
+    Switch: {
+      colorPrimary: '#1e1e1e',     // White when "on"
+      colorPrimaryHover: '#e0e0e0',// Light gray hover
+      colorBgContainer: '#424242', // Gray when "off"
+      handleBg: '#ffffff',         // White handle
+    },
+  },
+};
 
 const modeOptions = [
   {value: 'density', label: <span>Плотность застройки</span>},
@@ -419,6 +456,7 @@ function App() {
               '#1616ff',
               '#ab17e6'
             ],
+            borderColor: '#000000', // Black borders
           },
         ],
       }
@@ -458,6 +496,7 @@ function App() {
               'rgb(54, 43, 123)',
               'rgb(32, 134, 117)',
             ],
+            borderColor: '#000000', // Black borders
           },
         ],
       }
@@ -481,7 +520,6 @@ function App() {
         enabled: true,
         callbacks: {
           label: function(context) {
-            const label = context.label || '';
             const value = context.raw || 0;
             const total = context.dataset.data.reduce((acc, data) => acc + data, 0);
             const percentage = Math.round((value / total) * 100);
@@ -529,14 +567,91 @@ function App() {
     },
   };
 
+    // Process data to count unique values
+    // const valueCounts = data.reduce((acc, item) => {
+    //   const value = item[columnName];
+    //   acc[value] = (acc[value] || 0) + 1;
+    //   return acc;
+    // }, {});
+  
+    // const labels = Object.keys(valueCounts);
+    // const counts = Object.values(valueCounts);
+  
+    // // Assign colors based on value ranges
+    // const backgroundColors = labels.map(label => {
+    //   const value = parseFloat(label);
+    //   if (ranges[0].min <= value && value <= ranges[0].max) return ranges[0].color;
+    //   if (ranges[1].min <= value && value <= ranges[1].max) return ranges[1].color;
+    //   return ranges[2].color;
+    // });
+  
+    // const chartData = {
+    //   labels,
+    //   datasets: [{
+    //     label: `Этажность зданий`,
+    //     data: counts,
+    //     backgroundColor: backgroundColors,
+    //     borderColor: '#000000',
+    //     borderWidth: 1,
+    //     hoverBackgroundColor: backgroundColors.map(color => `${color}CC`),
+    //     hoverBorderColor: '#000000',
+    //     hoverBorderWidth: 2
+    //   }]
+    // };
+  
+    // const lvlOptions = {
+    //   indexAxis: 'x', // Vertical bars (default)
+    //   responsive: true,
+    //   plugins: {
+    //     legend: {
+    //       display: false
+    //     },
+    //     tooltip: {
+    //       callbacks: {
+    //         label: (context) => {
+    //           return `${context.parsed.y} items with ${columnName} = ${context.label}`;
+    //         }
+    //       }
+    //     },
+    //     title: {
+    //       display: true,
+    //       text: `Distribution of ${columnName} Values`,
+    //       font: {
+    //         size: 16
+    //       }
+    //     }
+    //   },
+    //   scales: {
+    //     y: {
+    //       beginAtZero: true,
+    //       title: {
+    //         display: true,
+    //         text: 'Площадь'
+    //       }
+    //     },
+    //     x: {
+    //       title: {
+    //         display: true,
+    //         text: 'Этажность'
+    //       }
+    //     }
+    //   }
+    // };
+  
+
+
   return (
+    <ConfigProvider theme={darkTheme}>
     <div className='main'>
-      <div style={{height: '8vh', display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
-        <h1>How Old is Podol</h1>
+      <div style={{
+        height: '8vh', display: 'flex', flexDirection: 'column', 
+        alignItems: 'center', justifyContent: 'center', fontSize: '2rem'
+      }}>
+        <b>How Old is Podol 2.0</b>
       </div>
       <div style={{width: '100vw', height: '84vh', display: 'flex', flexDirection: 'row'}}>
-        <div style={{width: '25%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
-          <div style={{marginBottom: 10}}>
+        <div style={{width: '25%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', backgroundColor: '#141414'}}>
+          <div style={{marginBottom: 10, display: 'flex', flexDirection: 'row', alignItems: 'center'}}>
             <Select 
                 style={{width: 200}} 
                 onChange={(value: string) => setMode(value)}
@@ -548,26 +663,30 @@ function App() {
                 checkedChildren={<b>FSI</b>} unCheckedChildren={<b>GSI</b>} 
               />
           </div>
-          {/* <div style={{marginBottom: 10}}>
-            
-          </div> */}
-          <div style={{ position: 'relative', width: '120', height: '120' }}>
-            <Doughnut id='doughnut' options={doughnutOptions} data={data} />
-            <div style={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              textAlign: 'center',
-            }}>
-              <div style={{ fontSize: '24px', fontWeight: 'bold' }}>
-                11
+          {mode !== 'lvl' && <>
+            <div style={{ position: 'relative', width: '120', height: '120' }}>
+              <Doughnut id='doughnut' options={doughnutOptions} data={data} />
+              <div style={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                textAlign: 'center',
+              }}>
+                <div style={{ fontSize: '24px', fontWeight: 'bold' }}>
+                  11
+                </div>
               </div>
             </div>
-          </div>
-          <div style={{ width: '100%', height: '400px' }}>
-            <Bar id='bar' data={data} options={barOptions}/>
-          </div>
+            <div style={{ width: '100%', height: '400px' }}>
+              <Bar id='bar' data={data} options={barOptions}/>
+            </div>
+          </>}
+          {/* {mode === 'lvl' && 
+            <div>
+              <Bar id='lvl' data={data} options={lvlOptions}/>
+            </div>
+          } */}
         </div>
         <Map
           initialViewState={{
@@ -592,10 +711,24 @@ function App() {
         </Map>
 
       </div>
-      <div style={{height: '8vh', display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
-        <Slider range style={{width: 600}} min={1781} max={2025} value={epoque} onChange={(value) => setEpoque(value)}/>
+      <div style={{height: '8vh', display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-evenly'}}>
+        <InputNumber 
+          style={{width: '60px'}} size="large" value={epoque[0]} 
+          onChange={(value: number|null) =>  setEpoque([value ? value : 1, epoque[1]])} 
+        />
+        <Slider range 
+          style={{width: 600}}
+          styles={{tracks: {background: 'white'}}} 
+          min={1781} max={2025} 
+          value={epoque} onChange={(value) => setEpoque(value)}
+        />
+        <InputNumber 
+          style={{width: '60px'}} size="large" value={epoque[1]} 
+          onChange={(value: number|null) =>  setEpoque([epoque[0],value ? value : 1])} 
+        />
       </div>
     </div>
+    </ConfigProvider>
 
   )
 }
