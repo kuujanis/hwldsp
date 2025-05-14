@@ -6,7 +6,7 @@ import { FilterSpecification, GeoJSONFeature, MapLayerMouseEvent } from 'maplibr
 import { ConfigProvider, InputNumber, Select, Slider, Switch } from 'antd';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title } from "chart.js";
 import { Bar, Doughnut } from "react-chartjs-2";
-import { accumulateValues, extractObjects, indexOfMax } from './utils/utils';
+import { accumulateValues, extractObjects, indexOfMax, lvlStatDefault } from './utils/utils';
 import { blockSelection, blockUsage, buildingUsage, EPOQUES, FAR_STOPS, GSI_STOPS } from './utils/styles';
 
 const BASE_URL = 'http://localhost:5173/'
@@ -84,6 +84,7 @@ function App() {
   const [mode, setMode] = useState<string>('year')
   const [far, setFar] = useState<boolean>(false)
   const [blockStat, setBlockStat] = useState<{[name: string]: string|number}|null>(null)
+  const [lvlStat, setLvlStat] = useState<number[]>(lvlStatDefault)
   const [blockFid, setBlockFid] = useState<number|null>(null)
   const [epoque, setEpoque] = useState<number[]>([1781,2025])
   // const [load, setLoad] = useState<boolean>(true)
@@ -370,12 +371,33 @@ function App() {
         }
       }
       if (mode==='density') {
-        let acc = 0
+        let acc = 0 
+        block.properties.low = 0
+        block.properties.mid = 0
+        block.properties.high = 0
+        block.properties.sky = 0  
         filteredBuildings?.features.map((building) => {
           if (building.properties.block_fid === block.properties.fid) {
             acc += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
           }
+          if (building.properties.block_fid === block.properties.fid) {
+            if (building.properties.lvl >= 1 && building.properties.lvl < 5) {
+              block.properties.low += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+            }
+            if (building.properties.lvl >= 5 && building.properties.lvl < 10) {
+              block.properties.mid += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+            }
+            if (building.properties.lvl >= 10 && building.properties.lvl < 17) {
+              block.properties.high += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+            }
+            if (building.properties.lvl >= 17) {
+              block.properties.sky += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+            }
+          }
         })
+        if (blockFid && blockFid === block.properties.fid) {
+          setBlockStat({...block.properties})
+        }
         if (far) {
           block.properties.far = acc*1.0/block.properties.sqr
         }
@@ -419,19 +441,46 @@ function App() {
     }
   },[blocks, blockFid, filteredBuildings, mode, far])
 
+  useEffect(() => {
+    if (mode === 'density') {
+      const stat = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+      const newstat = stat.map((lvl, i) => {
+        if (blockFid) {
+          filteredBuildings.features.map((building) => {
+            if (building.properties.block_fid === blockFid) {
+              if (Math.round(building.properties.lvl) === i) {
+                lvl += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+              }
+            }
+          })
+        } else {
+          filteredBuildings.features.map((building) => {
+            if (Math.round(building.properties.lvl) === i) {
+              lvl += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+            }
+          })
+        }
+
+        i++  
+        return lvl
+      })
+      setLvlStat({...newstat})
+    }
+  },[filteredBuildings, mode, far, blockFid])
+
   const data = useMemo(() => {
     console.log('memo')
-    if (mode !=='usage') {
+    if (mode ==='year') {
       return {
         labels: [
-          '1781-1871 гг', 
-          '1872-1921 гг', 
-          '1922-1941 гг', 
-          '1942-1959 гг', 
-          '1960-1975 гг', 
-          '1976-1991 гг',
-          '1992-2007 гг',
-          '2008-2025 гг'
+          '1781-1871', 
+          '1872-1921', 
+          '1922-1941', 
+          '1942-1959', 
+          '1960-1975', 
+          '1976-1991',
+          '1992-2007',
+          '2008-2025'
         ],
         datasets: [
           {
@@ -455,6 +504,34 @@ function App() {
               '#17afe6',
               '#1616ff',
               '#ab17e6'
+            ],
+            borderColor: '#000000', // Black borders
+          },
+        ],
+      }
+    }
+    if (mode ==='density') {
+      return {
+        labels: [
+          'Малоэтажная застройка', 
+          'Среднеэтажная застройка', 
+          'Многоэтажная застройка', 
+          'Высотная застройка', 
+        ],
+        datasets: [
+          {
+            label: 'Sqr meters',
+            data: [
+              blockStat?.low, 
+              blockStat?.mid, 
+              blockStat?.high, 
+              blockStat?.sky,
+            ],
+            backgroundColor: [
+              '#80fc03',
+              '#fcba03',
+              '#fc0303',
+              '#a503fc',
             ],
             borderColor: '#000000', // Black borders
           },
@@ -527,11 +604,10 @@ function App() {
           }
         }
       }
-    },
-    // cutout: '70%',
+    }
   };
   const barOptions = {
-    indexAxis: 'y', // Makes the bar chart vertical
+    indexAxis: 'y', 
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
@@ -545,98 +621,102 @@ function App() {
           }
         }
       },
-      // title: {
-      //   display: !!xAxisTitle,
-      //   text: xAxisTitle,
-      //   position: 'top',
-      // }
     },
     scales: {
       x: {
-        // title: {
-        //   display: !!yAxisTitle,
-        //   text: yAxisTitle,
-        // },
+        grid: {
+          color: '#737373',
+          lineWidth: 1
+        },
+        ticks: {
+          color: '#C0C0C0'
+        },
         beginAtZero: true,
       },
       y: {
-        grid: {
-          display: false,
-        }
+        // grid: {
+        //   color: '#C0C0C0',
+        //   lineWidth: 1
+        // },
+        ticks: {
+          color: '#C0C0C0'
+        },
       }
     },
   };
 
-    // Process data to count unique values
-    // const valueCounts = data.reduce((acc, item) => {
-    //   const value = item[columnName];
-    //   acc[value] = (acc[value] || 0) + 1;
-    //   return acc;
-    // }, {});
+    const lvlData = useMemo(() => {
+      return {
+        labels: ['1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16','17','18','19','20','21','22','23','24','25'],
+        datasets: [
+          {
+            label: 'Sqr meters',
+            data: lvlStat,
+            backgroundColor: [
+              '#ffffff',
+              '#80fc03',
+              '#80fc03',
+              '#80fc03',
+              '#fcba03',
+              '#fcba03',
+              '#fcba03',
+              '#fcba03',
+              '#fcba03',
+              '#fcba03',
+              '#fc0303',
+              '#fc0303',
+              '#fc0303',
+              '#fc0303',
+              '#fc0303',
+              '#fc0303',
+              '#fc0303',
+              '#a503fc',
+              '#a503fc',
+              '#a503fc',
+              '#a503fc',
+              '#a503fc',
+              '#a503fc',
+              '#a503fc',
+              '#a503fc',
+              '#a503fc',
+              '#a503fc',
+              '#a503fc',
+            ],
+            borderColor: '#ffffff', // Black borders
+          },
+        ],
+      }
+  }, [lvlStat])
   
-    // const labels = Object.keys(valueCounts);
-    // const counts = Object.values(valueCounts);
-  
-    // // Assign colors based on value ranges
-    // const backgroundColors = labels.map(label => {
-    //   const value = parseFloat(label);
-    //   if (ranges[0].min <= value && value <= ranges[0].max) return ranges[0].color;
-    //   if (ranges[1].min <= value && value <= ranges[1].max) return ranges[1].color;
-    //   return ranges[2].color;
-    // });
-  
-    // const chartData = {
-    //   labels,
-    //   datasets: [{
-    //     label: `Этажность зданий`,
-    //     data: counts,
-    //     backgroundColor: backgroundColors,
-    //     borderColor: '#000000',
-    //     borderWidth: 1,
-    //     hoverBackgroundColor: backgroundColors.map(color => `${color}CC`),
-    //     hoverBorderColor: '#000000',
-    //     hoverBorderWidth: 2
-    //   }]
-    // };
-  
-    // const lvlOptions = {
-    //   indexAxis: 'x', // Vertical bars (default)
-    //   responsive: true,
-    //   plugins: {
-    //     legend: {
-    //       display: false
-    //     },
-    //     tooltip: {
-    //       callbacks: {
-    //         label: (context) => {
-    //           return `${context.parsed.y} items with ${columnName} = ${context.label}`;
-    //         }
-    //       }
-    //     },
-    //     title: {
-    //       display: true,
-    //       text: `Distribution of ${columnName} Values`,
-    //       font: {
-    //         size: 16
-    //       }
-    //     }
-    //   },
-    //   scales: {
-    //     y: {
-    //       beginAtZero: true,
-    //       title: {
-    //         display: true,
-    //         text: 'Площадь'
-    //       }
-    //     },
-    //     x: {
-    //       title: {
-    //         display: true,
-    //         text: 'Этажность'
-    //       }
-    //     }
-    //   }
-    // };
+    const lvlOptions = useMemo(() => {return {
+      indexAxis: 'x', // Vertical bars (default)
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: false,
+        },
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: 'Площадь'
+          },
+          grid: {
+            color: '#737373',
+            lineWidth: 1
+          },
+        },
+        x: {
+          title: {
+            display: true,
+            text: 'Этажность'
+          }
+        }
+      }
+    }},[]);
   
 
 
@@ -652,18 +732,18 @@ function App() {
       <div style={{width: '100vw', height: '84vh', display: 'flex', flexDirection: 'row'}}>
         <div style={{width: '25%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', backgroundColor: '#141414'}}>
           <div style={{marginBottom: 10, display: 'flex', flexDirection: 'row', alignItems: 'center'}}>
-            <Select 
+              <Select 
                 style={{width: 200}} 
                 onChange={(value: string) => setMode(value)}
                 value={mode} options={modeOptions} 
               />
               <Switch 
                 value={far} onChange={setFar}
-                style={{fontSize: '2em'}}
+                style={{fontSize: '2em', marginLeft: '10px'}}
                 checkedChildren={<b>FSI</b>} unCheckedChildren={<b>GSI</b>} 
               />
           </div>
-          {mode !== 'lvl' && <>
+
             <div style={{ position: 'relative', width: '120', height: '120' }}>
               <Doughnut id='doughnut' options={doughnutOptions} data={data} />
               <div style={{
@@ -678,15 +758,16 @@ function App() {
                 </div>
               </div>
             </div>
+          {mode !== 'density' && 
             <div style={{ width: '100%', height: '400px' }}>
               <Bar id='bar' data={data} options={barOptions}/>
             </div>
-          </>}
-          {/* {mode === 'lvl' && 
-            <div>
-              <Bar id='lvl' data={data} options={lvlOptions}/>
+          }
+          {mode === 'density' && 
+            <div style={{ width: '100%', height: '320px' }}>
+              <Bar id='lvl' data={lvlData} options={lvlOptions}/>
             </div>
-          } */}
+          }
         </div>
         <Map
           initialViewState={{
@@ -719,7 +800,7 @@ function App() {
         <Slider range 
           style={{width: 600}}
           styles={{tracks: {background: 'white'}}} 
-          min={1781} max={2025} 
+          min={1781} max={2025}
           value={epoque} onChange={(value) => setEpoque(value)}
         />
         <InputNumber 

@@ -21,3 +21,5 @@ export const accumulateValues = features => features.reduce((acc, feature) => {
 
 export const extractObjects = (features, attribute) => 
   features.map(feature => feature[attribute]);
+
+export const lvlStatDefault = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
