@@ -1,13 +1,12 @@
 import { MapRef } from '@vis.gl/react-maplibre';
 import styles from './Article.module.css'
-import React, {Dispatch, SetStateAction, useEffect, useState} from 'react'
+import {Dispatch, SetStateAction, useEffect, useState} from 'react'
 import { useInView } from "react-intersection-observer";
 import { BASE_URL } from '../../utils/utils';
-import { Button } from 'antd';
 
 interface IArticle  {
     setEpoque: Dispatch<SetStateAction<number[]>>;
-    mapRef: MapRef|null
+    mapRef: MapRef|null,
 }
 
 const IMAGE_URL = BASE_URL+'src/assets/'
@@ -31,27 +30,27 @@ export const Article = ({setEpoque, mapRef}:IArticle) => {
         if (inViewTitle) {
             setCurrent('title');
             setEpoque([1781,2025])
-            mapRef?.flyTo({center: [37.63, 55.435], zoom: 11, pitch: 0, bearing: 0, duration: 2000})
+            mapRef?.flyTo({center: [37.55, 55.435], zoom: 11, pitch: 0, bearing: 0, duration: 2000})
         } else if (inViewMerchant) {
             setCurrent('merchant');
             setEpoque([1781,1871])
-            mapRef?.flyTo({center: [37.585, 55.435], zoom: 12.2, pitch: 0, bearing: 0, duration: 2000})
+            mapRef?.flyTo({center: [37.54, 55.435], zoom: 13.2, pitch: 0, bearing: 0, duration: 2000})
         } else if (inViewZinger) {
             setCurrent('zinger');
             setEpoque([1781,1922])
-            mapRef?.flyTo({center: [37.585, 55.435], zoom: 12.2, pitch: 0, bearing: 0, duration: 2000})           
+            mapRef?.flyTo({center: [37.55, 55.435], zoom: 12.2, pitch: 0, bearing: 0, duration: 2000})           
         } else if (inViewLenin) {
             setCurrent('lenin');
             setEpoque([1781,1940])
-            mapRef?.flyTo({center: [37.60, 55.43], zoom: 11.8, pitch: 0, bearing: 0, duration: 2000})
+            mapRef?.flyTo({center: [37.55, 55.43], zoom: 11.8, pitch: 0, bearing: 0, duration: 2000})
         } else if (inViewStalin) {
             setCurrent('stalin');
             setEpoque([1781,1959])
-            mapRef?.flyTo({center: [37.60, 55.43], zoom: 11.8, pitch: 0, bearing: 0, duration: 2000})
+            mapRef?.flyTo({center: [37.55, 55.43], zoom: 11.8, pitch: 0, bearing: 0, duration: 2000})
         } else if (inViewHrushev) {
             setCurrent('hrushev');
             setEpoque([1781,1974])
-            mapRef?.flyTo({center: [37.63, 55.435], zoom: 11, pitch: 0, bearing: 0, duration: 2000})
+            mapRef?.flyTo({center: [37.55, 55.435], zoom: 11, pitch: 0, bearing: 0, duration: 2000})
         } else if (inViewStagnation) {
             setCurrent('stagnation');
             setEpoque([1781,1991])
@@ -68,12 +67,6 @@ export const Article = ({setEpoque, mapRef}:IArticle) => {
             inViewZeroes, inViewToday, inViewTitle,
             setCurrent, setEpoque, mapRef
         ]);
-    
-
-    const activateMap = () => {
-        mapRef?.flyTo({center: [37.55, 55.43], zoom: 12, pitch: 0, bearing: 0, duration: 2000})
-    }
-
 
     return (
         <div className={styles.descolumn}>
@@ -82,7 +75,7 @@ export const Article = ({setEpoque, mapRef}:IArticle) => {
                     <h1 id='title'>HOW OLD IS PODOL</h1>
                     <p>
                         How ol' is Podol - это энтузиастский проект, целью которого является изучение городской морфологии
-                        Подольска. <br/> <b onClick={activateMap}>Активировать карту.</b>
+                        Подольска.
                     </p>
                 </div>
                 <div ref={merchantRef} className={styles.epoquediv}>
@@ -339,9 +332,6 @@ export const Article = ({setEpoque, mapRef}:IArticle) => {
                     <h3>Застройка: Микрорайоннаяя</h3>
                     <h3>Районы: Кузнечики, Красная Горка, Южный, Коледино</h3>
                 </div>
-                <Button>
-                    Активировать карту
-                </Button>
             </div>
         </div>
     )

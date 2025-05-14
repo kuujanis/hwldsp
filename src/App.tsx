@@ -9,6 +9,7 @@ import { Bar, Doughnut } from "react-chartjs-2";
 import { accumulateValues, BASE_URL, extractObjects, indexOfMax, lvlStatDefault, mapSettings } from './utils/utils';
 import { blockSelection, blockUsage, buildinglvl, buildingUsage, EPOQUES, FAR_STOPS, GSI_STOPS } from './utils/styles';
 import { Article } from './components/Article/Article';
+import { BuildingInfo } from './components/BuildingInfo/BuildingInfo';
 
 
 const BLOCKS_URL = BASE_URL+'src/assets/blocks.geojson'
@@ -89,6 +90,7 @@ function App() {
   const [blockFid, setBlockFid] = useState<number|null>(null)
   const [epoque, setEpoque] = useState<number[]>([1781,2025])
   const [blockMode, toggleBlockMode] = useReducer((prevState) => !prevState, false)
+  const [articleMode, toggleArticleMode] = useReducer((prevState) => !prevState, true)
   const [selectedBuilding, setSelectedBuilding] = useState<{[name: string]: string|number}|null>(null)
   const mapRef = useRef<MapRef | null>(null)
   // const [load, setLoad] = useState<boolean>(true)
@@ -263,7 +265,7 @@ function App() {
         setBlockStat({...e.features[0].properties})
         setBlockFid(e.features[0].properties.fid)
       }
-      if (e.features[0].layer.id === 'blocks') {
+      if (e.features[0].layer.id === 'buildings') {
         setSelectedBuilding({...e.features[0].properties})
       }
     }     
@@ -591,7 +593,7 @@ function App() {
               'rgb(184, 255, 104)',
               'rgb(252, 195, 50)',
               'rgb(255, 197, 135)',
-              'rgb(255, 150, 46)',
+              'rgb(254, 127, 0)',
               'rgb(255, 44, 44)',
               'rgb(64, 210, 255)',
               'rgb(54, 43, 123)',
@@ -605,10 +607,10 @@ function App() {
 
   },[blockStat, mode])
 
-  useEffect(() => {
-    console.log(blockStat)
-    console.log(data)
-  }, [blockStat, data])
+  // useEffect(() => {
+  //   console.log(blockStat)
+  //   console.log(data)
+  // }, [blockStat, data])
 
   const doughnutOptions = {
     responsive: true,
@@ -741,6 +743,10 @@ function App() {
         }
       }
     }},[]);
+
+    useEffect(() => {
+      console.log(articleMode)
+    },[articleMode])
   
 
 
@@ -794,6 +800,7 @@ function App() {
           }
         </div>
         <Map
+          ref={mapRef}
           initialViewState={{
             longitude: 37.63,
             latitude: 55.415,
@@ -822,8 +829,23 @@ function App() {
             {blockMode? <b>Кварталы</b> : <b>Здания</b>}
           </Button>
         </Map>
-        <div style={{width: '25%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', backgroundColor: '#141414'}}>
-          <Article setEpoque={setEpoque} mapRef={mapRef.current}/>
+        <div style={{
+            width: '25%', height: '100%', display: 'flex', 
+            flexDirection: 'column', alignItems: 'center', 
+            justifyContent: 'space-between', backgroundColor: '#141414'
+          }}>
+          {articleMode ? <Article 
+            setEpoque={setEpoque} mapRef={mapRef.current} 
+            /> : <BuildingInfo selectedBuilding={selectedBuilding} blockMode={blockMode} />}
+          <div style={{
+            height: '10%', width: '100%', backgroundColor: '#000000', 
+            display: 'flex', flexDirection: 'row', justifyContent: 'center',
+            alignItems: 'center'
+          }}>
+            <Button onClick={toggleArticleMode}>
+              {articleMode ? <span>Активировать карту</span> : <span>Назад к статье</span>}
+            </Button>
+          </div>
         </div>
 
       </div>

@@ -19,8 +19,8 @@
     flex-direction: column;
     width: 100%;
     color: white;
-    background-color: rgba(0, 0, 0, 0.5);
-    height: 100%;
+    background-color: rgb(14, 14, 14);
+    height: 90%;
 }
 
 .titlediv {
@@ -36,7 +36,7 @@
     margin: 10px 0;
     height: 100%;
     overflow: auto;
-    padding: 6px;
+    padding: 10px;
 }
 
 .closeButton {
