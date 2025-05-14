@@ -1,15 +1,16 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import {Layer, LayerProps, Map, Source} from '@vis.gl/react-maplibre';
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
+import {Layer, LayerProps, Map, MapRef, Source} from '@vis.gl/react-maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import './App.css'
 import { FilterSpecification, GeoJSONFeature, MapLayerMouseEvent } from 'maplibre-gl';
-import { ConfigProvider, InputNumber, Select, Slider, Switch } from 'antd';
+import { Button, ConfigProvider, InputNumber, Select, Slider, Switch } from 'antd';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title } from "chart.js";
 import { Bar, Doughnut } from "react-chartjs-2";
-import { accumulateValues, extractObjects, indexOfMax, lvlStatDefault } from './utils/utils';
-import { blockSelection, blockUsage, buildingUsage, EPOQUES, FAR_STOPS, GSI_STOPS } from './utils/styles';
+import { accumulateValues, BASE_URL, extractObjects, indexOfMax, lvlStatDefault, mapSettings } from './utils/utils';
+import { blockSelection, blockUsage, buildinglvl, buildingUsage, EPOQUES, FAR_STOPS, GSI_STOPS } from './utils/styles';
+import { Article } from './components/Article/Article';
 
-const BASE_URL = 'http://localhost:5173/'
+
 const BLOCKS_URL = BASE_URL+'src/assets/blocks.geojson'
 const BUILDINGS_URL = BASE_URL+'src/assets/buildings.geojson'
 
@@ -61,7 +62,7 @@ const darkTheme = {
     },
     // --- Switch ---
     Switch: {
-      colorPrimary: '#1e1e1e',     // White when "on"
+      colorPrimary: '#424242',     // White when "on"
       colorPrimaryHover: '#e0e0e0',// Light gray hover
       colorBgContainer: '#424242', // Gray when "off"
       handleBg: '#ffffff',         // White handle
@@ -87,9 +88,14 @@ function App() {
   const [lvlStat, setLvlStat] = useState<number[]>(lvlStatDefault)
   const [blockFid, setBlockFid] = useState<number|null>(null)
   const [epoque, setEpoque] = useState<number[]>([1781,2025])
+  const [blockMode, toggleBlockMode] = useReducer((prevState) => !prevState, false)
+  const [selectedBuilding, setSelectedBuilding] = useState<{[name: string]: string|number}|null>(null)
+  const mapRef = useRef<MapRef | null>(null)
   // const [load, setLoad] = useState<boolean>(true)
 
   ChartJS.register(ArcElement, Tooltip, CategoryScale, LinearScale, BarElement, Title, Legend);
+
+
 
   const fetchBlocks = async () => {
     try{
@@ -141,7 +147,7 @@ function App() {
     const blockLayerStyle: LayerProps = {
       id: 'blocks',
       type: 'fill-extrusion',
-      maxzoom: 12
+      'beforeId': 'blockSelection'
     }
     if (mode==='density') {
       blockLayerStyle.paint = {
@@ -149,7 +155,14 @@ function App() {
           property: far ? 'far' : 'gsi',
           type: 'interval',
           stops: far ? FAR_STOPS : GSI_STOPS
-        }
+        },
+        'fill-extrusion-height': [
+          'interpolate',
+          ['linear'],
+          ['zoom'],
+          9, 0,
+          10, ['*',['get', 'mean_lvl'],10]
+        ],
       }
     }
     if (mode==='year') {
@@ -165,15 +178,15 @@ function App() {
           [6], '#17afe6',
           [7], '#1616ff',
           [8], '#ab17e6',
-          'rgba(0,0,0,0)'
+          '#101010'
         ],
         'fill-extrusion-height': [
           'interpolate',
           ['linear'],
           ['zoom'],
           9, 0,
-          10, ['*',['get', 'mean_lvl'],5]
-      ]
+          10, ['*',['get', 'mean_lvl'],10]
+        ],
       }
     }
     if (mode==='usage') {
@@ -184,7 +197,7 @@ function App() {
           ['linear'],
           ['zoom'],
           9, 0,
-          10, ['*',['get', 'mean_lvl'],5]
+          10, ['*',['get', 'mean_lvl'],10]
       ]
       }
     }
@@ -195,7 +208,6 @@ function App() {
     const buildingLayerStyle: LayerProps = {
       id: 'buildings',
       type: 'fill-extrusion',
-      minzoom: 12
     }
     if (mode==='year') {
       buildingLayerStyle.paint = {
@@ -227,14 +239,19 @@ function App() {
     } 
     if (mode==='density') {
       buildingLayerStyle.paint = {
-        'fill-extrusion-color': ['rgba', ['*',['get','lvl'], 9], 0, 0, ['-',1,['/',['get','lvl'], 100]]],
+        'fill-extrusion-color': {
+          property: 'lvl',
+          type: 'interval',
+          stops: buildinglvl
+        },
         'fill-extrusion-height': [
           'interpolate',
           ['linear'],
           ['zoom'],
           9, 0,
           10, ['*',['get', 'lvl'],5]
-        ]
+        ],
+        'fill-extrusion-opacity': 0.75
       }
     }
     return buildingLayerStyle
@@ -242,10 +259,17 @@ function App() {
 
   const onClick = useCallback((e:MapLayerMouseEvent) => {
     if (e.features && e.features.length > 0) {
-      setBlockStat({...e.features[0].properties})
-      setBlockFid(e.features[0].properties.fid)
-    } else {
-      //drop block
+      if (e.features[0].layer.id === 'blocks') {
+        setBlockStat({...e.features[0].properties})
+        setBlockFid(e.features[0].properties.fid)
+      }
+      if (e.features[0].layer.id === 'blocks') {
+        setSelectedBuilding({...e.features[0].properties})
+      }
+    }     
+    else {
+      //drop features
+      setSelectedBuilding(null)
       setBlockFid(null)
     }
   },[])
@@ -776,29 +800,40 @@ function App() {
             fitBoundsOptions: {minZoom: 9},
             zoom: 11,
           }}
-          style={{width: '75%', height: '100%'}}
+          style={{width: '50%', height: '100%'}}
           mapStyle="https://api.maptiler.com/maps/f40a1280-834e-43de-b7ea-919faa734af4/style.json?key=5UXjcwcX8UyLW6zNAxsl"
           interactiveLayerIds={['buildings','blocks']}
           onClick={onClick}
           attributionControl={false}
+          maxPitch={85}
+          {...mapSettings}
         >
           <Source type="geojson" data={filteredBuildings}>
-            <Layer {...buildingLayer}/>
+            {!blockMode && <Layer {...buildingLayer}/>}
           </Source>
           <Source type="geojson" data={new_blocks}>
-            <Layer {...blockLayer}/>
-            {blockFid && <Layer {...blockSelection} filter={blockSelectionFIlter}/>}
+            {blockMode && <Layer {...blockLayer}/>}
+            {blockMode && <Layer {...blockSelection} filter={blockSelectionFIlter}/>}
           </Source>
+          <Button 
+            style={{position: 'absolute', bottom: '10px', left: '10px'}}
+            onClick={toggleBlockMode}
+          >
+            {blockMode? <b>Кварталы</b> : <b>Здания</b>}
+          </Button>
         </Map>
+        <div style={{width: '25%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', backgroundColor: '#141414'}}>
+          <Article setEpoque={setEpoque} mapRef={mapRef.current}/>
+        </div>
 
       </div>
-      <div style={{height: '8vh', display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-evenly'}}>
+      <div style={{height: '8vh', display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center'}}>
         <InputNumber 
           style={{width: '60px'}} size="large" value={epoque[0]} 
           onChange={(value: number|null) =>  setEpoque([value ? value : 1, epoque[1]])} 
         />
         <Slider range 
-          style={{width: 600}}
+          style={{width: 600, margin: '20px'}}
           styles={{tracks: {background: 'white'}}} 
           min={1781} max={2025}
           value={epoque} onChange={(value) => setEpoque(value)}

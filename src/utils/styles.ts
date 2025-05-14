@@ -13,8 +13,9 @@ export const blockSelection: LayerProps = {
       ['linear'],
       ['zoom'],
       9, 0,
-      10, ['*',['get', 'mean-lvl'],5]
+      10, ['*',['get', 'mean_lvl'],10]
     ],
+    'fill-extrusion-opacity': 0.5
   },
   
 }
@@ -31,7 +32,6 @@ export const EPOQUES:TStops = [
   [1992, '#1616ff'],
   [2008, '#ab17e6'],
 ]
-
 
 export const buildingUsage: DataDrivenPropertyValueSpecification<string> = [
   'match',
@@ -55,6 +55,13 @@ export const buildingUsage: DataDrivenPropertyValueSpecification<string> = [
   'rgb(181, 181, 181)',
 ]
 
+export const buildinglvl:TStops = [
+  [1, '#80fc03'],
+  [3, '#fcba03'],
+  [10, '#fc0303'],
+  [17, '#a503fc'],
+]
+
 export const blockUsage: DataDrivenPropertyValueSpecification<string> = [
   'match',
   ['get', 'usage'],
@@ -74,11 +81,11 @@ export const blockUsage: DataDrivenPropertyValueSpecification<string> = [
   'rgb(54, 43, 123)',
   [8],
   'rgb(32, 134, 117)',
-  'rgba(0,0,0,0)'
+  '#101010'
 ]
 
 export const GSI_STOPS:TStops = [
-  [0, 'rgba(0,0,0,0)'],
+  [0,'#101010'],
   [0.01, 'rgba(0, 255, 0, 0.3)'],
   [0.05, 'rgba(174, 255, 0, 0.5)'],
   [0.1, 'rgba(255, 221, 0, 0.7)'],
@@ -87,7 +94,7 @@ export const GSI_STOPS:TStops = [
 ]
 
 export const FAR_STOPS:TStops = [
-  [0, 'rgba(0,0,0,0)'],
+  [0,'#101010'],
   [0.05, 'rgba(0, 255, 0, 0.3)'],
   [0.25, 'rgba(174, 255, 0, 0.5)'],
   [0.5, 'rgba(255, 221, 0, 0.7)'],

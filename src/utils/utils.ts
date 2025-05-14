@@ -1,3 +1,5 @@
+export const BASE_URL = 'http://localhost:5173/'
+
 export const indexOfMax = (arr: number[]) => {
   let max = arr[0];
   let maxIndex = 0;
@@ -23,3 +25,14 @@ export const extractObjects = (features, attribute) =>
   features.map(feature => feature[attribute]);
 
 export const lvlStatDefault = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+
+export const mapSettings = {
+  scrollZoom: true,
+  boxZoom: true,
+  dragRotate: true,
+  dragPan: true,
+  keyboard: true,
+  doubleClickZoom: true,
+  touchZoomRotate: true,
+  touchPitch: true,
+}
