@@ -101,3 +101,19 @@ export const FAR_STOPS:TStops = [
   [0.75, 'rgba(255, 123, 0, 0.9)'],
   [1, 'rgba(255, 0, 0,1)'],
 ]
+
+export const buildingSelection: LayerProps = {
+  id: 'buildingSelection',
+  type: 'fill-extrusion',
+  paint: {
+        'fill-extrusion-color': 'black',
+        'fill-extrusion-height': [
+          'interpolate',
+          ['linear'],
+          ['zoom'],
+          9, 0,
+          10, ['*',['get', 'lvl'],5]
+      ],
+      'fill-extrusion-opacity': 0.5
+    }
+}

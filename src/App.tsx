@@ -7,7 +7,7 @@ import { Button, ConfigProvider, InputNumber, Select, Slider, Switch } from 'ant
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title } from "chart.js";
 import { Bar, Doughnut } from "react-chartjs-2";
 import { accumulateValues, BASE_URL, extractObjects, indexOfMax, lvlStatDefault, enabledSettings, disabledSettings } from './utils/utils';
-import { blockSelection, blockUsage, buildinglvl, buildingUsage, EPOQUES, FAR_STOPS, GSI_STOPS } from './utils/styles';
+import { blockSelection, blockUsage, buildinglvl, buildingSelection, buildingUsage, EPOQUES, FAR_STOPS, GSI_STOPS } from './utils/styles';
 import { Article } from './components/Article/Article';
 import { BuildingInfo } from './components/BuildingInfo/BuildingInfo';
 import { Epoque } from './components/Epoque/Epoque';
@@ -210,7 +210,7 @@ function App() {
   const buildingLayer = useMemo(() => {
     const buildingLayerStyle: LayerProps = {
       id: 'buildings',
-      type: 'fill-extrusion',
+      type: 'fill-extrusion'
     }
     if (mode==='year') {
       buildingLayerStyle.paint = {
@@ -278,6 +278,7 @@ function App() {
   },[])
 
   const blockSelectionFIlter: FilterSpecification = useMemo(() => ['in','fid', blockFid ? blockFid : ''],[blockFid])
+  const buildingSelectionFIlter: FilterSpecification = useMemo(() => ['in','full_id', selectedBuilding ? selectedBuilding.full_id :''],[selectedBuilding])
 
   //block config 
 
@@ -872,6 +873,7 @@ function App() {
           </div>
           <Source type="geojson" data={filteredBuildings}>
             {!blockMode && <Layer {...buildingLayer}/>}
+            {!blockMode && <Layer {...buildingSelection} filter={buildingSelectionFIlter}/>}
           </Source>
           <Source type="geojson" data={new_blocks}>
             {blockMode && <Layer {...blockLayer}/>}
