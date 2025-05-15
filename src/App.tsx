@@ -6,7 +6,7 @@ import { FilterSpecification, GeoJSONFeature, MapLayerMouseEvent } from 'maplibr
 import { Button, ConfigProvider, InputNumber, Select, Slider, Switch } from 'antd';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title } from "chart.js";
 import { Bar, Doughnut } from "react-chartjs-2";
-import { accumulateValues, BASE_URL, extractObjects, indexOfMax, lvlStatDefault, enabledSettings, disabledSettings } from './utils/utils';
+import { accumulateValues, BASE_URL, extractObjects, indexOfMax, lvlStatDefault, enabledSettings, disabledSettings, simpsonsIndex, reverseSimpsonsIndex } from './utils/utils';
 import { blockSelection, blockUsage, buildinglvl, buildingSelection, buildingUsage, EPOQUES, FAR_STOPS, GSI_STOPS } from './utils/styles';
 import { Article } from './components/Article/Article';
 import { BuildingInfo } from './components/BuildingInfo/BuildingInfo';
@@ -73,7 +73,7 @@ const darkTheme = {
 };
 
 const modeOptions = [
-  {value: 'year', label: <span>Возраст застройки</span>},
+  {value: 'year', label: <span>Период застройки</span>},
   {value: 'usage', label: <span>Тип застройки</span>},
   {value: 'density', label: <span>Плотность застройки</span>},
 ]
@@ -86,7 +86,7 @@ function App() {
   // const [year, setYear] = useState<number>(2025)
   const [mode, setMode] = useState<string>('usage')
   const [far, setFar] = useState<boolean>(false)
-  const [blockStat, setBlockStat] = useState<{[name: string]: string|number}|null>(null)
+  const [blockStat, setBlockStat] = useState<{[name: string]: number}|null>(null)
   const [lvlStat, setLvlStat] = useState<number[]>(lvlStatDefault)
   const [blockFid, setBlockFid] = useState<number|null>(null)
   const [epoque, setEpoque] = useState<number[]>([1781,2025])
@@ -758,13 +758,39 @@ function App() {
       }
     }},[]);
 
-    useEffect(() => {
-      console.log(articleMode)
-    },[articleMode])
-  
   const mapSettings = useMemo(() => {
     return articleMode ? disabledSettings : enabledSettings
   },[articleMode])
+
+  const diversityIndex= useMemo(() => {
+    if (blockStat) {
+      if (mode === 'usage') {
+        return simpsonsIndex([
+          blockStat?.single, blockStat?.multiple, blockStat?.dormi, blockStat?.mixed, blockStat?.commercial,
+          blockStat?.public,blockStat?.tech, blockStat?.utility 
+        ])
+      }
+      if (mode === 'year') {
+        return reverseSimpsonsIndex([
+          blockStat?.merchant, blockStat?.industrial, blockStat?.revolutionary, blockStat?.postwar, 
+          blockStat?.urban, blockStat?.stagnation,blockStat?.nineties, blockStat?.contemporary 
+        ])
+      }
+      if (mode === 'density') {
+        return (blockStat.sum / blockStat.sqr).toFixed(2) 
+      }
+    }
+  },[blockStat, mode])
+
+  const footnote = useMemo(() => {
+                if (mode==='year') {
+                  return <span>Индекс гомогенности</span>
+                } else if (mode==='usage') {
+                  return <span>Индекс разнообразия</span>
+                } else if (mode==='density') {
+                  return far ? <span>Floor Surface Index</span> : <span>Ground Surface Index</span>
+                }    
+  },[mode,far])
 
   return (
     <ConfigProvider theme={darkTheme}>
@@ -790,30 +816,39 @@ function App() {
               />
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <div style={{ position: 'relative', width: '160px', height: '160px' }}>
-              <Doughnut id='doughnut' options={doughnutOptions} data={data} />
-              <div style={{
-                position: 'absolute',
-                top: '50%',
-                left: '50%',
-                transform: 'translate(-50%, -50%)',
-                textAlign: 'center',
-              }}>
-                {/* <div style={{ fontSize: '24px', fontWeight: 'bold' }}>
-                  {centerValue}
-                </div> */}
+
+          <div style={{ display: 'flex', alignItems: 'flex-start' }}>
+            {/* Left column - Doughnut with centered value and bottom text */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginRight: '16px' }}>
+              <div style={{ position: 'relative', width: '160px', height: '160px' }}>
+                <Doughnut id='doughnut' options={doughnutOptions} data={data} />
+                <div style={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  textAlign: 'center',
+                }}>
+                  <div style={{ fontSize: '24px', fontWeight: 'bold' }}>
+                    {diversityIndex}
+                  </div>
+                </div>
+              </div>
+              {/* New text under the doughnut */}
+              <div style={{ fontSize: '14px', color: '#999', marginTop: '8px' }}>
+                {footnote}
               </div>
             </div>
-            
-            <div style={{ marginLeft: '16px' }}>
+
+  {/* Right column - Primary and secondary values */}
+            <div style={{ marginLeft: '16px', marginTop: '40px'}}>
               <div style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '4px' }}>
                 {blockStat && (Number(blockStat.sum)*0.0001).toFixed(1)} га       
               </div>
               <div style={{ fontSize: '14px' }}>
                   площадь застройки
               </div>
-              <div style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '4px' }}>
+              <div style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '4px', marginTop: '8px' }}>
                 {blockStat && (Number(blockStat.sqr)*0.0001).toFixed(1)} га
               </div>
               <div style={{ fontSize: '14px' }}>

@@ -46,3 +46,37 @@ export const disabledSettings = {
   touchZoomRotate: false,
   touchPitch: false,
 }
+
+export const simpsonsIndex = (values: number[]) => {
+  // Filter out zeros (optional, depending on your use case)
+  const filteredValues = values.filter((val: number) => val > 0);
+  
+  const total = filteredValues.reduce((sum, val) => sum + val, 0);
+  
+  if (total === 0) return 0; // Edge case: avoid division by zero
+  
+  let sumOfSquares = 0;
+  for (const val of filteredValues) {
+    const proportion = val / total;
+    sumOfSquares += proportion * proportion;
+  }
+  
+  return (1 - sumOfSquares).toFixed(2);
+}
+
+export const reverseSimpsonsIndex = (values: number[]) => {
+  // Filter out zeros (optional, depending on your use case)
+  const filteredValues = values.filter((val: number) => val > 0);
+  
+  const total = filteredValues.reduce((sum, val) => sum + val, 0);
+  
+  if (total === 0) return 0; // Edge case: avoid division by zero
+  
+  let sumOfSquares = 0;
+  for (const val of filteredValues) {
+    const proportion = val / total;
+    sumOfSquares += proportion * proportion;
+  }
+  
+  return (sumOfSquares).toFixed(2);
+}
