@@ -6,10 +6,11 @@ import { FilterSpecification, GeoJSONFeature, MapLayerMouseEvent } from 'maplibr
 import { Button, ConfigProvider, InputNumber, Select, Slider, Switch } from 'antd';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title } from "chart.js";
 import { Bar, Doughnut } from "react-chartjs-2";
-import { accumulateValues, BASE_URL, extractObjects, indexOfMax, lvlStatDefault, mapSettings } from './utils/utils';
+import { accumulateValues, BASE_URL, extractObjects, indexOfMax, lvlStatDefault, enabledSettings, disabledSettings } from './utils/utils';
 import { blockSelection, blockUsage, buildinglvl, buildingUsage, EPOQUES, FAR_STOPS, GSI_STOPS } from './utils/styles';
 import { Article } from './components/Article/Article';
 import { BuildingInfo } from './components/BuildingInfo/BuildingInfo';
+import { Epoque } from './components/Epoque/Epoque';
 
 
 const BLOCKS_URL = BASE_URL+'src/assets/blocks.geojson'
@@ -72,9 +73,9 @@ const darkTheme = {
 };
 
 const modeOptions = [
-  {value: 'density', label: <span>Плотность застройки</span>},
   {value: 'year', label: <span>Возраст застройки</span>},
   {value: 'usage', label: <span>Тип застройки</span>},
+  {value: 'density', label: <span>Плотность застройки</span>},
 ]
 
 function App() {
@@ -83,7 +84,7 @@ function App() {
   const [filteredBuildings, setFilteredBuildings] = useState<GeoJSON>(emptyGeoJSON)
   const [new_blocks, setNewBlocks] = useState<GeoJSON>(emptyGeoJSON)
   // const [year, setYear] = useState<number>(2025)
-  const [mode, setMode] = useState<string>('year')
+  const [mode, setMode] = useState<string>('usage')
   const [far, setFar] = useState<boolean>(false)
   const [blockStat, setBlockStat] = useState<{[name: string]: string|number}|null>(null)
   const [lvlStat, setLvlStat] = useState<number[]>(lvlStatDefault)
@@ -748,7 +749,9 @@ function App() {
       console.log(articleMode)
     },[articleMode])
   
-
+  const mapSettings = useMemo(() => {
+    return articleMode ? disabledSettings : enabledSettings
+  },[articleMode])
 
   return (
     <ConfigProvider theme={darkTheme}>
@@ -815,6 +818,29 @@ function App() {
           maxPitch={85}
           {...mapSettings}
         >
+          <div  className='legendTab'>
+            <div className='epoqueTab'>
+                <Epoque articleMode={articleMode} setEpoque={setEpoque} epoque={epoque} frame={[1781, 1870]} color='#e57316' tabid={'merchant'}/>
+                <Epoque articleMode={articleMode} setEpoque={setEpoque} epoque={epoque} frame={[1871, 1921]} color='#e5a717' tabid={'zinger'}/>
+                <Epoque articleMode={articleMode} setEpoque={setEpoque} epoque={epoque} frame={[1922, 1940]} color='#e6caa0' tabid={'lenin'}/>
+                <Epoque articleMode={articleMode} setEpoque={setEpoque} epoque={epoque} frame={[1941, 1959]} color='#f3f3f3' tabid={'stalin'}/>
+                <Epoque articleMode={articleMode} setEpoque={setEpoque} epoque={epoque} frame={[1960, 1974]} color='#a1e6db' tabid={'hrushev'}/>
+                <Epoque articleMode={articleMode} setEpoque={setEpoque} epoque={epoque} frame={[1975, 1991]} color='#17afe6' tabid={'stagnation'}/>
+                <Epoque articleMode={articleMode} setEpoque={setEpoque} epoque={epoque} frame={[1992, 2007]} color='#1616ff' tabid={'zeroes'}/>
+                <Epoque articleMode={articleMode} setEpoque={setEpoque} epoque={epoque} frame={[2008, 2024]} color='#ab17e6' tabid={'today'}/>
+            </div>
+            <div  className='dateTab'>
+              <span></span>
+              <span>1781</span>
+              <span>1871</span>
+              <span>1922</span>
+              <span>1941</span>
+              <span>1960</span>
+              <span>1975</span>
+              <span>1992</span>
+              <span>2008</span>
+            </div>
+          </div>
           <Source type="geojson" data={filteredBuildings}>
             {!blockMode && <Layer {...buildingLayer}/>}
           </Source>
@@ -836,7 +862,7 @@ function App() {
           }}>
           {articleMode ? <Article 
             setEpoque={setEpoque} mapRef={mapRef.current} 
-            /> : <BuildingInfo selectedBuilding={selectedBuilding} blockMode={blockMode} />}
+            /> : <BuildingInfo selectedBuilding={selectedBuilding} blockMode={blockMode} mapRef={mapRef.current} />}
           <div style={{
             height: '10%', width: '100%', backgroundColor: '#000000', 
             display: 'flex', flexDirection: 'row', justifyContent: 'center',
@@ -851,17 +877,17 @@ function App() {
       </div>
       <div style={{height: '8vh', display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center'}}>
         <InputNumber 
-          style={{width: '60px'}} size="large" value={epoque[0]} 
+          style={{width: '60px'}} size="large" value={epoque[0]} disabled={articleMode}
           onChange={(value: number|null) =>  setEpoque([value ? value : 1, epoque[1]])} 
         />
         <Slider range 
           style={{width: 600, margin: '20px'}}
           styles={{tracks: {background: 'white'}}} 
-          min={1781} max={2025}
+          min={1781} max={2025} disabled={articleMode}
           value={epoque} onChange={(value) => setEpoque(value)}
         />
         <InputNumber 
-          style={{width: '60px'}} size="large" value={epoque[1]} 
+          style={{width: '60px'}} size="large" value={epoque[1]} disabled={articleMode}
           onChange={(value: number|null) =>  setEpoque([epoque[0],value ? value : 1])} 
         />
       </div>

@@ -26,7 +26,7 @@ export const extractObjects = (features, attribute) =>
 
 export const lvlStatDefault = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
 
-export const mapSettings = {
+export const enabledSettings = {
   scrollZoom: true,
   boxZoom: true,
   dragRotate: true,
@@ -35,4 +35,14 @@ export const mapSettings = {
   doubleClickZoom: true,
   touchZoomRotate: true,
   touchPitch: true,
+}
+export const disabledSettings = {    
+  scrollZoom: false,
+  boxZoom: false,
+  dragRotate: false,
+  dragPan: false,
+  keyboard: false,
+  doubleClickZoom: false,
+  touchZoomRotate: false,
+  touchPitch: false,
 }
