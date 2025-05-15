@@ -3,6 +3,7 @@ import styles from './Article.module.css'
 import {Dispatch, SetStateAction, useEffect, useState} from 'react'
 import { useInView } from "react-intersection-observer";
 import { BASE_URL } from '../../utils/utils';
+import { ArrowDownOutlined } from '@ant-design/icons';
 
 interface IArticle  {
     setEpoque: Dispatch<SetStateAction<number[]>>;
@@ -33,11 +34,11 @@ export const Article = ({setEpoque, mapRef}:IArticle) => {
             mapRef?.flyTo({center: [37.55, 55.435], zoom: 11, pitch: 0, bearing: 0, duration: 2000})
         } else if (inViewMerchant) {
             setCurrent('merchant');
-            setEpoque([1781,1871])
+            setEpoque([1781,1870])
             mapRef?.flyTo({center: [37.54, 55.435], zoom: 13.2, pitch: 0, bearing: 0, duration: 2000})
         } else if (inViewZinger) {
             setCurrent('zinger');
-            setEpoque([1781,1922])
+            setEpoque([1781,1921])
             mapRef?.flyTo({center: [37.55, 55.435], zoom: 12.2, pitch: 0, bearing: 0, duration: 2000})           
         } else if (inViewLenin) {
             setCurrent('lenin');
@@ -77,6 +78,9 @@ export const Article = ({setEpoque, mapRef}:IArticle) => {
                         How ol' is Podol - это энтузиастский проект, целью которого является изучение городской морфологии
                         Подольска.
                     </p>
+                    <div style={{fontSize: '1.5rem'}}>
+                        <ArrowDownOutlined type='primary' style={{marginRight: '10px'}} /><b>Читать статью</b>
+                    </div>  
                 </div>
                 <div ref={merchantRef} className={styles.epoquediv}>
                     <h1 id='merchant'>Купеческий город</h1>

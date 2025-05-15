@@ -292,6 +292,7 @@ function App() {
         block.properties.stagnation = 0
         block.properties.nineties = 0
         block.properties.contemporary = 0
+        block.properties.sum = 0
         filteredBuildings?.features.map((building) => {
           if (building.properties.block_fid === block.properties.fid) {
             if (building.properties.year_built <= 1871) {
@@ -320,6 +321,10 @@ function App() {
             }
           }
         })
+
+        block.properties.sum = 
+        block.properties.merchant +block.properties.industrial+block.properties.revolutionary+block.properties.contemporary
+        +block.properties.postwar+block.properties.urban+block.properties.stagnation+block.properties.nineties
         if (blockFid && blockFid === block.properties.fid) {
           console.log('reset')
           setBlockStat({...block.properties})
@@ -334,6 +339,7 @@ function App() {
           block.properties.nineties,
           block.properties.contemporary
         ]
+
         const i = indexOfMax(epoqueArray)
         block.properties.epoque = i+1
         if (epoqueArray[i] === 0) {
@@ -349,6 +355,7 @@ function App() {
         block.properties.public = 0
         block.properties.tech = 0
         block.properties.utility = 0
+        block.properties.sum = 0
         filteredBuildings?.features.map((building) => {
           if (building.properties.block_fid === block.properties.fid) {
             if (building.properties.building_2 === 'detached_house') {
@@ -377,6 +384,9 @@ function App() {
             }
           }
         })
+        block.properties.sum = 
+        +block.properties.single+block.properties.multiple+block.properties.dormi+block.properties.mixed
+        +block.properties.commercial+block.properties.public+block.properties.tech+block.properties.utility
         if (blockFid && blockFid === block.properties.fid) {
           console.log('reset')
           setBlockStat({...block.properties})
@@ -391,6 +401,7 @@ function App() {
           block.properties.tech,
           block.properties.utility
         ]
+
         const i = indexOfMax(usageArray)
         block.properties.usage = i+1
         if (usageArray[i] === 0) {
@@ -431,6 +442,7 @@ function App() {
         if (!far) {
           block.properties.gsi = acc*1.0/block.properties.sqr
         }
+        block.properties.sum = block.properties.low + block.properties.mid+block.properties.high + block.properties.sky
       }
 
       let acc_lvl = 0
@@ -777,7 +789,8 @@ function App() {
               />
           </div>
 
-            <div style={{ position: 'relative', width: '120', height: '120' }}>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <div style={{ position: 'relative', width: '160px', height: '160px' }}>
               <Doughnut id='doughnut' options={doughnutOptions} data={data} />
               <div style={{
                 position: 'absolute',
@@ -786,13 +799,29 @@ function App() {
                 transform: 'translate(-50%, -50%)',
                 textAlign: 'center',
               }}>
-                <div style={{ fontSize: '24px', fontWeight: 'bold' }}>
-                  11
-                </div>
+                {/* <div style={{ fontSize: '24px', fontWeight: 'bold' }}>
+                  {centerValue}
+                </div> */}
               </div>
             </div>
+            
+            <div style={{ marginLeft: '16px' }}>
+              <div style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '4px' }}>
+                {blockStat && (Number(blockStat.sum)*0.0001).toFixed(1)} га       
+              </div>
+              <div style={{ fontSize: '14px' }}>
+                  площадь застройки
+              </div>
+              <div style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '4px' }}>
+                {blockStat && (Number(blockStat.sqr)*0.0001).toFixed(1)} га
+              </div>
+              <div style={{ fontSize: '14px' }}>
+                  площадь земель
+              </div>
+            </div>
+          </div>
           {mode !== 'density' && 
-            <div style={{ width: '100%', height: '400px' }}>
+            <div style={{ width: '100%', height: '360px' }}>
               <Bar id='bar' data={data} options={barOptions}/>
             </div>
           }
@@ -827,7 +856,7 @@ function App() {
                 <Epoque articleMode={articleMode} setEpoque={setEpoque} epoque={epoque} frame={[1960, 1974]} color='#a1e6db' tabid={'hrushev'}/>
                 <Epoque articleMode={articleMode} setEpoque={setEpoque} epoque={epoque} frame={[1975, 1991]} color='#17afe6' tabid={'stagnation'}/>
                 <Epoque articleMode={articleMode} setEpoque={setEpoque} epoque={epoque} frame={[1992, 2007]} color='#1616ff' tabid={'zeroes'}/>
-                <Epoque articleMode={articleMode} setEpoque={setEpoque} epoque={epoque} frame={[2008, 2024]} color='#ab17e6' tabid={'today'}/>
+                <Epoque articleMode={articleMode} setEpoque={setEpoque} epoque={epoque} frame={[2008, 2025]} color='#ab17e6' tabid={'today'}/>
             </div>
             <div  className='dateTab'>
               <span></span>
@@ -849,8 +878,8 @@ function App() {
             {blockMode && <Layer {...blockSelection} filter={blockSelectionFIlter}/>}
           </Source>
           <Button 
-            style={{position: 'absolute', bottom: '10px', left: '10px'}}
-            onClick={toggleBlockMode}
+            style={{position: 'absolute', bottom: '10px', right: '10px'}}
+            onClick={toggleBlockMode} size='large'
           >
             {blockMode? <b>Кварталы</b> : <b>Здания</b>}
           </Button>
