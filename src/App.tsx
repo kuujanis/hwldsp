@@ -2,12 +2,12 @@ import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'r
 import {Layer, LayerProps, Map, MapRef, Source} from '@vis.gl/react-maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import './App.css'
-import { FilterSpecification, GeoJSONFeature, MapLayerMouseEvent } from 'maplibre-gl';
+import { GeoJSONFeature, MapLayerMouseEvent } from 'maplibre-gl';
 import { Button, ConfigProvider, InputNumber, Select, Slider, Switch } from 'antd';
-import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title } from "chart.js";
+import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title, TooltipItem, ChartData, ChartOptions } from "chart.js";
 import { Bar, Doughnut } from "react-chartjs-2";
 import { accumulateValues, BASE_URL, extractObjects, indexOfMax, lvlStatDefault, enabledSettings, disabledSettings, simpsonsIndex, reverseSimpsonsIndex } from './utils/utils';
-import { blockSelection, blockUsage, buildinglvl, buildingSelection, buildingUsage, EPOQUES, FAR_STOPS, GSI_STOPS } from './utils/styles';
+import { blockUsage, buildinglvl, buildingUsage, EPOQUES, FAR_STOPS, GSI_STOPS } from './utils/styles';
 import { Article } from './components/Article/Article';
 import { BuildingInfo } from './components/BuildingInfo/BuildingInfo';
 import { Epoque } from './components/Epoque/Epoque';
@@ -277,8 +277,45 @@ function App() {
     }
   },[])
 
-  const blockSelectionFIlter: FilterSpecification = useMemo(() => ['in','fid', blockFid ? blockFid : ''],[blockFid])
-  const buildingSelectionFIlter: FilterSpecification = useMemo(() => ['in','full_id', selectedBuilding ? selectedBuilding.full_id :''],[selectedBuilding])
+
+
+  const blockSelect: LayerProps = useMemo(() => {
+    return {
+      id: 'blockSelection',
+      type: 'fill-extrusion',
+      paint: {
+        'fill-extrusion-color': 'black',
+        'fill-extrusion-height': [
+          'interpolate',
+          ['linear'],
+          ['zoom'],
+          9, 0,
+          10, ['*',['get', 'mean_lvl'],10]
+        ],
+        'fill-extrusion-opacity': 0.5
+      },
+      filter: ['in','fid', blockFid ? blockFid : '']
+    }
+  },[blockFid])
+
+  const buildingSelect: LayerProps =useMemo(() => {
+    return {
+      id: 'buildingSelection',
+      type: 'fill-extrusion',
+      paint: {
+            'fill-extrusion-color': 'black',
+            'fill-extrusion-height': [
+              'interpolate',
+              ['linear'],
+              ['zoom'],
+              9, 0,
+              10, ['*',['get', 'lvl'],5]
+          ],
+          'fill-extrusion-opacity': 0.5
+      },
+      filter: ['in','full_id', selectedBuilding ? selectedBuilding.full_id :'']
+    }
+  },[selectedBuilding])
 
   //block config 
 
@@ -476,6 +513,7 @@ function App() {
       })
       const properties = extractObjects(upd_features, 'properties')
       if (!blockFid) {
+        console.log(properties)
         setBlockStat(accumulateValues(properties))
       }
     }
@@ -508,8 +546,7 @@ function App() {
     }
   },[filteredBuildings, mode, far, blockFid])
 
-  const data = useMemo(() => {
-    console.log('memo')
+  const data: ChartData<"doughnut", (number | undefined)[], string> = useMemo(() => {
     if (mode ==='year') {
       return {
         labels: [
@@ -578,7 +615,7 @@ function App() {
         ],
       }
     }
-    if (mode==='usage') {
+    else {
       return {
         labels: [
           'Одноквартирные здания', 
@@ -601,7 +638,7 @@ function App() {
               blockStat?.commercial,
               blockStat?.public,
               blockStat?.tech,
-              blockStat?.utility 
+              blockStat?.utility
             ],
             backgroundColor: [
               'rgb(184, 255, 104)',
@@ -618,72 +655,181 @@ function App() {
         ],
       }
     }
-
+  },[blockStat, mode])
+  const barData: ChartData<"bar", (number | undefined)[], string> = useMemo(() => {
+    if (mode ==='year') {
+      return {
+        labels: [
+          '1781-1871', 
+          '1872-1921', 
+          '1922-1941', 
+          '1942-1959', 
+          '1960-1975', 
+          '1976-1991',
+          '1992-2007',
+          '2008-2025'
+        ],
+        datasets: [
+          {
+            label: 'Sqr meters',
+            data: [
+              blockStat?.merchant, 
+              blockStat?.industrial, 
+              blockStat?.revolutionary, 
+              blockStat?.postwar, 
+              blockStat?.urban,
+              blockStat?.stagnation,
+              blockStat?.nineties,
+              blockStat?.contemporary 
+            ],
+            backgroundColor: [
+              '#e57316',
+              '#e5a717',
+              '#e6caa0',
+              '#f3f3f3',
+              '#a1e6db',
+              '#17afe6',
+              '#1616ff',
+              '#ab17e6'
+            ],
+            borderColor: '#000000', // Black borders
+          },
+        ],
+      }
+    }
+    if (mode ==='density') {
+      return {
+        labels: [
+          'Малоэтажная застройка', 
+          'Среднеэтажная застройка', 
+          'Многоэтажная застройка', 
+          'Высотная застройка', 
+        ],
+        datasets: [
+          {
+            label: 'Sqr meters',
+            data: [
+              blockStat?.low, 
+              blockStat?.mid, 
+              blockStat?.high, 
+              blockStat?.sky,
+            ],
+            backgroundColor: [
+              '#80fc03',
+              '#fcba03',
+              '#fc0303',
+              '#a503fc',
+            ],
+            borderColor: '#000000', // Black borders
+          },
+        ],
+      }
+    }
+    else {
+      return {
+        labels: [
+          'Одноквартирные здания', 
+          'Многоквартирные здания', 
+          'Общежития', 
+          'Многофункциональные здания', 
+          'Офисные и торговые здания', 
+          'Общественные здания',
+          'Производственные здания',
+          'Хозяйственные здания'
+        ],
+        datasets: [
+          {
+            label: 'Sqr meters',
+            data: [
+              blockStat?.single, 
+              blockStat?.multiple, 
+              blockStat?.dormi, 
+              blockStat?.mixed, 
+              blockStat?.commercial,
+              blockStat?.public,
+              blockStat?.tech,
+              blockStat?.utility
+            ],
+            backgroundColor: [
+              'rgb(184, 255, 104)',
+              'rgb(252, 195, 50)',
+              'rgb(255, 197, 135)',
+              'rgb(254, 127, 0)',
+              'rgb(255, 44, 44)',
+              'rgb(64, 210, 255)',
+              'rgb(54, 43, 123)',
+              'rgb(32, 134, 117)',
+            ],
+            borderColor: '#000000', // Black borders
+          },
+        ],
+      }
+    }
   },[blockStat, mode])
 
-  // useEffect(() => {
-  //   console.log(blockStat)
-  //   console.log(data)
-  // }, [blockStat, data])
-
-  const doughnutOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        display: false,
-      },
-      tooltip: {
-        enabled: true,
-        callbacks: {
-          label: function(context) {
-            const value = context.raw || 0;
-            const total = context.dataset.data.reduce((acc, data) => acc + data, 0);
-            const percentage = Math.round((value / total) * 100);
-            return `${percentage}%`;
+  const doughnutOptions: ChartOptions<'doughnut'> = useMemo(() => {
+    return {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: false,
+        },
+        tooltip: {
+          enabled: true,
+          callbacks: {
+              label: function(context: TooltipItem<'doughnut'>): string {
+                const value = context.raw as number || 0;
+                const dataset = context.dataset;
+                const total = (dataset.data as number[]).reduce((acc: number, data: number) => acc + data, 0);
+                const percentage = Math.round((value / total) * 100);
+                return `${percentage}%`;
+              }
           }
         }
       }
     }
-  };
-  const barOptions = {
-    indexAxis: 'y', 
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        display: false,
-      },
-      tooltip: {
-        callbacks: {
-          label: function(context) {
-            return `${context.dataset.label || ''}: ${context.raw}`;
+  },[]);
+  const barOptions: ChartOptions<'bar'> = useMemo(() => {
+    return {
+      indexAxis: 'y', 
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: false,
+        },
+        tooltip: {
+          callbacks: {
+            label: function(context: TooltipItem<'bar'>) {
+              return `${context.dataset.label || ''}: ${context.raw}`;
+            }
           }
+        },
+      },
+      scales: {
+        x: {
+          grid: {
+            color: '#737373',
+            lineWidth: 1
+          },
+          ticks: {
+            color: '#C0C0C0'
+          },
+          beginAtZero: true,
+        },
+        y: {
+          // grid: {
+          //   color: '#C0C0C0',
+          //   lineWidth: 1
+          // },
+          ticks: {
+            color: '#C0C0C0'
+          },
         }
       },
-    },
-    scales: {
-      x: {
-        grid: {
-          color: '#737373',
-          lineWidth: 1
-        },
-        ticks: {
-          color: '#C0C0C0'
-        },
-        beginAtZero: true,
-      },
-      y: {
-        // grid: {
-        //   color: '#C0C0C0',
-        //   lineWidth: 1
-        // },
-        ticks: {
-          color: '#C0C0C0'
-        },
       }
-    },
-  };
+  },[]);
 
     const lvlData = useMemo(() => {
       return {
@@ -728,7 +874,7 @@ function App() {
       }
   }, [lvlStat])
   
-    const lvlOptions = useMemo(() => {return {
+    const lvlOptions : ChartOptions<'bar'> = useMemo(() => {return {
       indexAxis: 'x', // Vertical bars (default)
       responsive: true,
       maintainAspectRatio: false,
@@ -858,7 +1004,7 @@ function App() {
           </div>
           {mode !== 'density' && 
             <div style={{ width: '100%', height: '360px' }}>
-              <Bar id='bar' data={data} options={barOptions}/>
+              <Bar id='bar' data={barData} options={barOptions}/>
             </div>
           }
           {mode === 'density' && 
@@ -908,11 +1054,11 @@ function App() {
           </div>
           <Source type="geojson" data={filteredBuildings}>
             {!blockMode && <Layer {...buildingLayer}/>}
-            {!blockMode && <Layer {...buildingSelection} filter={buildingSelectionFIlter}/>}
+            {!blockMode && <Layer {...buildingSelect}/>}
           </Source>
           <Source type="geojson" data={new_blocks}>
             {blockMode && <Layer {...blockLayer}/>}
-            {blockMode && <Layer {...blockSelection} filter={blockSelectionFIlter}/>}
+            {blockMode && <Layer {...blockSelect}/>}
           </Source>
           <Button 
             style={{position: 'absolute', bottom: '10px', right: '10px'}}

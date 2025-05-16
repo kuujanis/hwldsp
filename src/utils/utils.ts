@@ -12,7 +12,7 @@ export const indexOfMax = (arr: number[]) => {
   return maxIndex;
 }
 
-export const accumulateValues = features => features.reduce((acc, feature) => {
+export const accumulateValues = (properties: {[name: string]: string;}[]) => properties?.reduce((acc: {[name: string]: number}, feature) => {
   Object.entries(feature).forEach(([key, value]) => {
     if (typeof value === 'number') {
       acc[key] = (acc[key] || 0) + value;
@@ -21,8 +21,8 @@ export const accumulateValues = features => features.reduce((acc, feature) => {
   return acc;
 }, {});
 
-export const extractObjects = (features, attribute) => 
-  features.map(feature => feature[attribute]);
+export const extractObjects = (features:{properties: {[name: string]: string;}}[], attribute: string) => 
+  features?.map((feature: {[properties:string]: {[name: string]: string;}}) => feature[attribute]);
 
 export const lvlStatDefault = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
 

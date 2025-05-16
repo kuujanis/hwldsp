@@ -1,6 +1,6 @@
 import { MapRef } from '@vis.gl/react-maplibre';
 import styles from './Article.module.css'
-import {Dispatch, SetStateAction, useEffect, useState} from 'react'
+import {Dispatch, SetStateAction, useEffect } from 'react'
 import { useInView } from "react-intersection-observer";
 import { BASE_URL } from '../../utils/utils';
 import { ArrowDownOutlined } from '@ant-design/icons';
@@ -13,8 +13,6 @@ interface IArticle  {
 const IMAGE_URL = BASE_URL+'src/assets/'
 
 export const Article = ({setEpoque, mapRef}:IArticle) => {
-
-    const [current, setCurrent] = useState<string>('title');
 
     //tab change on scroll
     const [titleRef, inViewTitle] = useInView({threshold: 0})
@@ -29,44 +27,35 @@ export const Article = ({setEpoque, mapRef}:IArticle) => {
    
     useEffect(() => {
         if (inViewTitle) {
-            setCurrent('title');
             setEpoque([1781,2025])
             mapRef?.flyTo({center: [37.55, 55.435], zoom: 11, pitch: 0, bearing: 0, duration: 2000})
         } else if (inViewMerchant) {
-            setCurrent('merchant');
             setEpoque([1781,1870])
             mapRef?.flyTo({center: [37.54, 55.435], zoom: 13.2, pitch: 0, bearing: 0, duration: 2000})
         } else if (inViewZinger) {
-            setCurrent('zinger');
             setEpoque([1781,1921])
             mapRef?.flyTo({center: [37.55, 55.435], zoom: 12.2, pitch: 0, bearing: 0, duration: 2000})           
         } else if (inViewLenin) {
-            setCurrent('lenin');
             setEpoque([1781,1940])
             mapRef?.flyTo({center: [37.55, 55.43], zoom: 11.8, pitch: 0, bearing: 0, duration: 2000})
         } else if (inViewStalin) {
-            setCurrent('stalin');
             setEpoque([1781,1959])
             mapRef?.flyTo({center: [37.55, 55.43], zoom: 11.8, pitch: 0, bearing: 0, duration: 2000})
         } else if (inViewHrushev) {
-            setCurrent('hrushev');
             setEpoque([1781,1974])
             mapRef?.flyTo({center: [37.55, 55.435], zoom: 11, pitch: 0, bearing: 0, duration: 2000})
         } else if (inViewStagnation) {
-            setCurrent('stagnation');
             setEpoque([1781,1991])
         } else if (inViewZeroes) {
-            setCurrent('zeroes');
             setEpoque([1781,2007])
         } else if (inViewToday) {
-            setCurrent('today');
             setEpoque([1781,2025])
         }         
       }, [
             inViewMerchant, inViewZinger, inViewLenin, 
             inViewStalin, inViewHrushev, inViewStagnation, 
             inViewZeroes, inViewToday, inViewTitle,
-            setCurrent, setEpoque, mapRef
+            setEpoque, mapRef
         ]);
 
     return (
