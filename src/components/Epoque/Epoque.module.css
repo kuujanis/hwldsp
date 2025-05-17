@@ -1,7 +1,0 @@
-.level {
-    height: 12px;
-    border: solid black 1px
-}
-.level:hover {
-    opacity: 0.8;
-}
