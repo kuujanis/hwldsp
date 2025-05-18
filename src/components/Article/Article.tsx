@@ -3,13 +3,12 @@ import styles from './Article.module.css'
 import {Dispatch, SetStateAction, useEffect } from 'react'
 import { useInView } from "react-intersection-observer";
 import { ArrowDownOutlined } from '@ant-design/icons';
+import { getPublicImage } from '../../utils/utils';
 
 interface IArticle  {
     setEpoque: Dispatch<SetStateAction<number[]>>;
     mapRef: MapRef|null,
 }
-
-const IMAGE_URL = '//'
 
 export const Article = ({setEpoque, mapRef}:IArticle) => {
 
@@ -79,7 +78,7 @@ export const Article = ({setEpoque, mapRef}:IArticle) => {
                             <p>Сохранившаяся застройка: 2 га</p>
                             <p>Менее 1% современной</p>
                         </div>
-                        <img className={styles.frontimg} src={IMAGE_URL+'merchant.jpg'}/>
+                        <img className={styles.frontimg} src={getPublicImage('merchant.jpg')}/>
                     </div>
                     <p>
                         Статус города был дарован селу Подол Екатериной Великой в 1781 году.
@@ -113,7 +112,7 @@ export const Article = ({setEpoque, mapRef}:IArticle) => {
                             <p>Сохранившаяся застройка: 13 га</p>
                             <p>Менее 3% современной</p>
                         </div>
-                        <img className={styles.frontimg} src={IMAGE_URL+'zinger.jpg'}/>
+                        <img className={styles.frontimg} src={getPublicImage('zinger.jpg')}/>
                     </div>
                     <p>
                         В 1866 году через Подольск прошла линия Московско-Курской железной дороги. По её рельсам
@@ -152,7 +151,7 @@ export const Article = ({setEpoque, mapRef}:IArticle) => {
                             <p>Сохранившаяся застройка: 22 га</p>
                             <p>Менее 5,5% современной</p>
                         </div>
-                        <img className={styles.frontimg} src={IMAGE_URL+'construct.jpg'}/>
+                        <img className={styles.frontimg} src={getPublicImage('construct.jpg')}/>
                     </div>
                     <p>
                         Город оправился от революционной разрухи только к середине 1920-х. В 1927 году был разработан 
@@ -189,7 +188,7 @@ export const Article = ({setEpoque, mapRef}:IArticle) => {
                             <p>Сохранившаяся застройка: 28 га</p>
                             <p>Менее 7% современной</p>
                         </div>
-                        <img className={styles.frontimg} src={IMAGE_URL+'stalin.png'}/>
+                        <img className={styles.frontimg} src={getPublicImage('stalin.png')}/>
                     </div>
                     <p>
                         С началом войны авангардные эксперименты в планировке сошли на нет.
@@ -217,7 +216,7 @@ export const Article = ({setEpoque, mapRef}:IArticle) => {
                             <p>Сохранившаяся застройка: 110 га</p>
                             <p>Менее 27% современной</p>
                         </div>
-                        <img className={styles.frontimg} src={IMAGE_URL+'hrushev.png'}/>
+                        <img className={styles.frontimg} src={getPublicImage('hrushev.png')}/>
                     </div>
                     <p>
                         Если предыдущие волны строительства имели целью обеспечить жильем работников подольских заводов,
@@ -248,7 +247,7 @@ export const Article = ({setEpoque, mapRef}:IArticle) => {
                             <p>Сохранившаяся застройка: 51 га</p>
                             <p>Менее 13% современной</p>
                         </div>
-                        <img className={styles.frontimg} src={IMAGE_URL+'stagnation.png'}/>
+                        <img className={styles.frontimg} src={getPublicImage('stagnation.png')}/>
                     </div>
                     <p>
                         В эпоху застоя рост населения прекратился и темпы строительства снизились.
@@ -277,7 +276,7 @@ export const Article = ({setEpoque, mapRef}:IArticle) => {
                             <p>Сохранившаяся застройка: 56 га</p>
                             <p>Менее 14% современной</p>
                         </div>
-                        <img className={styles.frontimg} src={IMAGE_URL+'zeroes.png'}/>
+                        <img className={styles.frontimg} src={getPublicImage('zeroes.png')}/>
                     </div>
                     <p>
                         Для начала постсоветской эпохи характерна бессистемная точечная застройка.
@@ -304,7 +303,7 @@ export const Article = ({setEpoque, mapRef}:IArticle) => {
                             <p>Сохранившаяся застройка: 122 га</p>
                             <p>Около 30% современной</p>
                         </div>
-                        <img className={styles.frontimg} src={IMAGE_URL+'/postmodern.png'}/>
+                        <img className={styles.frontimg} src={getPublicImage('/postmodern.png')}/>
                     </div>
                     <p>
                         В 2018 году Подольск наряду с другим спутником Москвы Балашихой вошел в топ-20 самых

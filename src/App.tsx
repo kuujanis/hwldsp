@@ -560,7 +560,6 @@ function App() {
         ],
         datasets: [
           {
-            label: 'Sqr meters',
             data: [
               blockStat?.merchant, 
               blockStat?.industrial, 
@@ -596,7 +595,6 @@ function App() {
         ],
         datasets: [
           {
-            label: 'Sqr meters',
             data: [
               blockStat?.low, 
               blockStat?.mid, 
@@ -670,7 +668,7 @@ function App() {
         ],
         datasets: [
           {
-            label: 'Sqr meters',
+            label: 'Площадь, м²',
             data: [
               blockStat?.merchant, 
               blockStat?.industrial, 
@@ -706,7 +704,7 @@ function App() {
         ],
         datasets: [
           {
-            label: 'Sqr meters',
+            label: 'Площадь, м²',
             data: [
               blockStat?.low, 
               blockStat?.mid, 
@@ -738,7 +736,7 @@ function App() {
         ],
         datasets: [
           {
-            label: 'Sqr meters',
+            label: 'Площадь, м²',
             data: [
               blockStat?.single, 
               blockStat?.multiple, 
@@ -835,7 +833,7 @@ function App() {
         labels: ['1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16','17','18','19','20','21','22','23','24','25'],
         datasets: [
           {
-            label: 'Sqr meters',
+            label: 'Площадь, м²',
             data: lvlStat,
             backgroundColor: [
               '#ffffff',
