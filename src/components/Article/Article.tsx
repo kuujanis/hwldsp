@@ -2,7 +2,6 @@ import { MapRef } from '@vis.gl/react-maplibre';
 import styles from './Article.module.css'
 import {Dispatch, SetStateAction, useEffect } from 'react'
 import { useInView } from "react-intersection-observer";
-import { BASE_URL } from '../../utils/utils';
 import { ArrowDownOutlined } from '@ant-design/icons';
 
 interface IArticle  {
@@ -10,7 +9,7 @@ interface IArticle  {
     mapRef: MapRef|null,
 }
 
-const IMAGE_URL = BASE_URL+'src/assets/'
+const IMAGE_URL = '//'
 
 export const Article = ({setEpoque, mapRef}:IArticle) => {
 
