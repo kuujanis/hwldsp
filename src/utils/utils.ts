@@ -80,3 +80,7 @@ export const reverseSimpsonsIndex = (values: number[]) => {
   
   return (sumOfSquares).toFixed(2);
 }
+
+export function getPublicImage(path: string) {
+  return `${import.meta.env.BASE_URL}${path}`;
+}

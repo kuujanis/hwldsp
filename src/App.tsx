@@ -6,15 +6,14 @@ import { GeoJSONFeature, MapLayerMouseEvent } from 'maplibre-gl';
 import { Button, ConfigProvider, InputNumber, Select, Slider, Switch } from 'antd';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title, TooltipItem, ChartData, ChartOptions } from "chart.js";
 import { Bar, Doughnut } from "react-chartjs-2";
-import { accumulateValues, BASE_URL, extractObjects, indexOfMax, lvlStatDefault, enabledSettings, disabledSettings, simpsonsIndex, reverseSimpsonsIndex } from './utils/utils';
+import { accumulateValues, extractObjects, indexOfMax, lvlStatDefault, enabledSettings, disabledSettings, simpsonsIndex, reverseSimpsonsIndex } from './utils/utils';
 import { blockUsage, buildinglvl, buildingUsage, EPOQUES, FAR_STOPS, GSI_STOPS } from './utils/styles';
 import { Article } from './components/Article/Article';
 import { BuildingInfo } from './components/BuildingInfo/BuildingInfo';
 import { Epoque } from './components/Epoque/Epoque';
 
-
-const BLOCKS_URL = BASE_URL+'src/assets/blocks.geojson'
-const BUILDINGS_URL = BASE_URL+'src/assets/buildings.geojson'
+const BLOCKS_URL = new URL('./assets/blocks.geojson', import.meta.url).href;
+const BUILDINGS_URL = new URL('./assets/buildings.geojson', import.meta.url).href;
 
 interface GeoJSON {
   type: "FeatureCollection",
@@ -561,7 +560,6 @@ function App() {
         ],
         datasets: [
           {
-            label: 'Sqr meters',
             data: [
               blockStat?.merchant, 
               blockStat?.industrial, 
@@ -597,7 +595,6 @@ function App() {
         ],
         datasets: [
           {
-            label: 'Sqr meters',
             data: [
               blockStat?.low, 
               blockStat?.mid, 
@@ -671,7 +668,7 @@ function App() {
         ],
         datasets: [
           {
-            label: 'Sqr meters',
+            label: 'Площадь, м²',
             data: [
               blockStat?.merchant, 
               blockStat?.industrial, 
@@ -707,7 +704,7 @@ function App() {
         ],
         datasets: [
           {
-            label: 'Sqr meters',
+            label: 'Площадь, м²',
             data: [
               blockStat?.low, 
               blockStat?.mid, 
@@ -739,7 +736,7 @@ function App() {
         ],
         datasets: [
           {
-            label: 'Sqr meters',
+            label: 'Площадь, м²',
             data: [
               blockStat?.single, 
               blockStat?.multiple, 
@@ -836,7 +833,7 @@ function App() {
         labels: ['1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16','17','18','19','20','21','22','23','24','25'],
         datasets: [
           {
-            label: 'Sqr meters',
+            label: 'Площадь, м²',
             data: lvlStat,
             backgroundColor: [
               '#ffffff',
