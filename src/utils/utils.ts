@@ -1,3 +1,5 @@
+import { Feature, GeoJsonProperties, Geometry } from "geojson";
+import { intersection } from "martinez-polygon-clipping";
 import { useEffect, useState } from "react";
 
 export const BASE_URL = 'http://localhost:5173/'
@@ -100,3 +102,22 @@ export const useDebounce = (value: number[], delay: number) => {
 
   return debouncedValue;
 };
+
+export const extractCoord = (geometry: Geometry) => {
+  if (geometry.type === 'Polygon') {
+    return geometry.coordinates
+  } else return null
+}
+
+
+export const booleanIntersection = (a: Feature<Geometry,GeoJsonProperties>,b:Feature<Geometry,GeoJsonProperties>) => {
+  const ag = extractCoord(a.geometry)
+  const bg = extractCoord(b.geometry)
+  if (!ag || !bg) {
+    return false
+  }
+  const r = intersection(ag,bg)
+  if (r && r.length>0) {
+    return true
+  } else return false
+}

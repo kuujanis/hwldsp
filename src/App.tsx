@@ -6,14 +6,13 @@ import { GeoJSONFeature, MapLayerMouseEvent } from 'maplibre-gl';
 import { Button, ConfigProvider, InputNumber, Select, Slider, Switch } from 'antd';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title, TooltipItem, ChartData, ChartOptions } from "chart.js";
 import { Bar, Doughnut } from "react-chartjs-2";
-import { accumulateValues, extractObjects, indexOfMax, lvlStatDefault, enabledSettings, disabledSettings, simpsonsIndex, reverseSimpsonsIndex, useDebounce } from './utils/utils';
+import { accumulateValues, extractObjects, indexOfMax, lvlStatDefault, enabledSettings, disabledSettings, simpsonsIndex, reverseSimpsonsIndex, useDebounce, booleanIntersection } from './utils/utils';
 import { blockUsage, buildinglvl, buildingUsage, EPOQUES, FAR_STOPS, GSI_STOPS } from './utils/styles';
 import { Article } from './components/Article/Article';
 import { BuildingInfo } from './components/BuildingInfo/BuildingInfo';
 import { Epoque } from './components/Epoque/Epoque';
 import rbush from 'geojson-rbush';
-import { intersection } from 'martinez-polygon-clipping'
-
+import { Feature, FeatureCollection, GeoJsonProperties, Geometry } from 'geojson';
 
 
 const BLOCKS_URL = new URL('./assets/blocks_n.geojson', import.meta.url).href;
@@ -93,6 +92,7 @@ function App() {
   const [blockStat, setBlockStat] = useState<{[name: string]: number}|null>(null)
   const [lvlStat, setLvlStat] = useState<number[]>(lvlStatDefault)
   const [blockFid, setBlockFid] = useState<number|null>(null)
+  const [selectedBlock, setSelectedBlock] = useState<GeoJSONFeature|null>(null)
 
   const [epoque, setEpoque] = useState<number[]>([1781,2025])
   const debouncedEpoque = useDebounce(epoque, 30)
@@ -293,6 +293,7 @@ function App() {
       if (e.features[0].layer.id === 'blocks') {
         setBlockStat({...e.features[0].properties})
         setBlockFid(e.features[0].properties.fid)
+        setSelectedBlock(e.features[0])
       }
       if (e.features[0].layer.id === 'buildings') {
         console.log(e.features[0].properties)
@@ -303,6 +304,7 @@ function App() {
       //drop features
       setSelectedBuilding(null)
       setBlockFid(null)
+      setSelectedBlock(null)
     }
   },[])
 
@@ -351,13 +353,11 @@ function App() {
   useEffect(() => {
     const startTime = performance.now()
     const label = mode
-    let acc_lvl = 0
-    let j = 0
-
-    const tree = new rbush()
+    const tree = rbush()
     tree.load({ type: 'FeatureCollection', features: filteredBuildings.features });
-    
     const upd_features = filteredBlocks?.features.map((block) => {
+      let acc_lvl = 0
+      let j = 0
       if (mode==='year') {
         block.properties.merchant = 0
         block.properties.industrial = 0
@@ -368,10 +368,9 @@ function App() {
         block.properties.nineties = 0
         block.properties.contemporary = 0
         block.properties.sum = 0
-        const candidates:GeoJSON = tree.search(block)
-        candidates?.features.map((building) => {
-          const r = intersection(building.geometry.coordinates, block.geometry.coordinates)
-          if (r && r.length > 0) {
+        const candidates: FeatureCollection<Geometry, GeoJsonProperties> = tree.search(block)
+        candidates?.features.map((building: Feature<Geometry, GeoJsonProperties>) => {
+          if (booleanIntersection(building,block) && building.properties) {
             
             if (building.properties.year_built <= 1871) {
               block.properties.merchant += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
@@ -436,10 +435,9 @@ function App() {
         block.properties.tech = 0
         block.properties.utility = 0
         block.properties.sum = 0
-        const candidates:GeoJSON = tree.search(block)
+        const candidates: FeatureCollection<Geometry, GeoJsonProperties>  = tree.search(block)
         candidates?.features.map((building) => {
-          const r = intersection(building.geometry.coordinates, block.geometry.coordinates)
-          if (r && r.length > 0) {
+          if (booleanIntersection(building,block) && building.properties) {
             if (building.properties.building_2 === 'detached_house') {
               block.properties.single += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
             }
@@ -498,26 +496,27 @@ function App() {
         block.properties.mid = 0
         block.properties.high = 0
         block.properties.sky = 0  
-        const candidates:GeoJSON = tree.search(block)
+        const candidates: FeatureCollection<Geometry, GeoJsonProperties> = tree.search(block)
         candidates?.features.map((building) => {
-          const r = intersection(building.geometry.coordinates, block.geometry.coordinates)
-          if (r && r.length > 0) {
-            acc += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
-            if (building.properties.lvl >= 1 && building.properties.lvl < 5) {
-              block.properties.low += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+          if (building.properties) {
+            if (booleanIntersection(building,block)) {
+              acc += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+              if (building.properties.lvl >= 1 && building.properties.lvl < 5) {
+                block.properties.low += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+              }
+              if (building.properties.lvl >= 5 && building.properties.lvl < 10) {
+                block.properties.mid += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+              }
+              if (building.properties.lvl >= 10 && building.properties.lvl < 17) {
+                block.properties.high += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+              }
+              if (building.properties.lvl >= 17) {
+                block.properties.sky += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+              }
             }
-            if (building.properties.lvl >= 5 && building.properties.lvl < 10) {
-              block.properties.mid += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
-            }
-            if (building.properties.lvl >= 10 && building.properties.lvl < 17) {
-              block.properties.high += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
-            }
-            if (building.properties.lvl >= 17) {
-              block.properties.sky += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
-            }
+            acc_lvl += building.properties.lvl
+            j++
           }
-          acc_lvl += building.properties.lvl
-          j++
         })
         block.properties.sum = block.properties.low + block.properties.mid+block.properties.high + block.properties.sky
         if (far) {
@@ -564,10 +563,13 @@ function App() {
   useEffect(() => {
     if (mode === 'density') {
       const stat = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+      const tree = rbush()
+      tree.load({ type: 'FeatureCollection', features: filteredBuildings.features });
       const newstat = stat.map((lvl, i) => {
-        if (blockFid) {
-          filteredBuildings.features.map((building) => {
-            if (building.properties.block_fid === blockFid) {
+        if (selectedBlock) {
+          const candidates: FeatureCollection<Geometry, GeoJsonProperties> = tree.search(selectedBlock)
+          candidates?.features.map((building) => {
+            if (booleanIntersection(building,selectedBlock) && building.properties) {
               if (Math.round(building.properties.lvl) === i) {
                 lvl += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
               }
@@ -586,7 +588,7 @@ function App() {
       })
       setLvlStat({...newstat})
     }
-  },[filteredBuildings, mode, far, blockFid])
+  },[filteredBuildings, mode, far, selectedBlock])
 
   const data: ChartData<"doughnut", (number | undefined)[], string> = useMemo(() => {
     if (mode ==='year') {
