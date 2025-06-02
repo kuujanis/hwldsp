@@ -6,14 +6,18 @@ import { GeoJSONFeature, MapLayerMouseEvent } from 'maplibre-gl';
 import { Button, ConfigProvider, InputNumber, Select, Slider, Switch } from 'antd';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title, TooltipItem, ChartData, ChartOptions } from "chart.js";
 import { Bar, Doughnut } from "react-chartjs-2";
-import { accumulateValues, extractObjects, indexOfMax, lvlStatDefault, enabledSettings, disabledSettings, simpsonsIndex, reverseSimpsonsIndex } from './utils/utils';
+import { accumulateValues, extractObjects, indexOfMax, lvlStatDefault, enabledSettings, disabledSettings, simpsonsIndex, reverseSimpsonsIndex, useDebounce } from './utils/utils';
 import { blockUsage, buildinglvl, buildingUsage, EPOQUES, FAR_STOPS, GSI_STOPS } from './utils/styles';
 import { Article } from './components/Article/Article';
 import { BuildingInfo } from './components/BuildingInfo/BuildingInfo';
 import { Epoque } from './components/Epoque/Epoque';
+import rbush from 'geojson-rbush';
+import { intersection } from 'martinez-polygon-clipping'
 
-const BLOCKS_URL = new URL('./assets/blocks.geojson', import.meta.url).href;
-const BUILDINGS_URL = new URL('./assets/buildings.geojson', import.meta.url).href;
+
+
+const BLOCKS_URL = new URL('./assets/blocks_n.geojson', import.meta.url).href;
+const BUILDINGS_URL = new URL('./assets/building_result.geojson', import.meta.url).href;
 
 interface GeoJSON {
   type: "FeatureCollection",
@@ -81,6 +85,7 @@ function App() {
   const [buildings, setBuildings] = useState<GeoJSON>(emptyGeoJSON)
   const [blocks, setBlocks] = useState<GeoJSON>(emptyGeoJSON)
   const [filteredBuildings, setFilteredBuildings] = useState<GeoJSON>(emptyGeoJSON)
+  const [filteredBlocks, setFilteredBlocks] = useState<GeoJSON>(emptyGeoJSON)
   const [new_blocks, setNewBlocks] = useState<GeoJSON>(emptyGeoJSON)
   // const [year, setYear] = useState<number>(2025)
   const [mode, setMode] = useState<string>('usage')
@@ -88,10 +93,14 @@ function App() {
   const [blockStat, setBlockStat] = useState<{[name: string]: number}|null>(null)
   const [lvlStat, setLvlStat] = useState<number[]>(lvlStatDefault)
   const [blockFid, setBlockFid] = useState<number|null>(null)
+
   const [epoque, setEpoque] = useState<number[]>([1781,2025])
+  const debouncedEpoque = useDebounce(epoque, 30)
+
   const [blockMode, toggleBlockMode] = useReducer((prevState) => !prevState, false)
   const [articleMode, toggleArticleMode] = useReducer((prevState) => !prevState, true)
   const [selectedBuilding, setSelectedBuilding] = useState<{[name: string]: string|number}|null>(null)
+
   const mapRef = useRef<MapRef | null>(null)
   // const [load, setLoad] = useState<boolean>(true)
 
@@ -127,10 +136,10 @@ function App() {
 
   useEffect(() => {
     const filtered_buildings = buildings.features.filter((building) => 
-      building.properties.year_built <= epoque[1] && 
-      building.properties.year_lost > epoque[1] &&
-      building.properties.year_built >= epoque[0]
-  )
+      building.properties.year_built <= debouncedEpoque[1] && 
+      building.properties.year_lost > debouncedEpoque[1] &&
+      building.properties.year_built >= debouncedEpoque[0]
+    )
     setFilteredBuildings({
       type: 'FeatureCollection', 
       name: 'buildings', 
@@ -143,7 +152,27 @@ function App() {
       features: filtered_buildings
     })
     
-  },[epoque,buildings])
+  },[debouncedEpoque,buildings])
+
+  useEffect(() => {
+    const filtered_blocks = blocks.features.filter((block) => 
+      block.properties.year_formed <= debouncedEpoque[1] && 
+      block.properties.year_gone > debouncedEpoque[1] &&
+      block.properties.year_formed >= debouncedEpoque[0]
+    )
+    console.log(filtered_blocks.length)
+    setFilteredBlocks({
+      type: 'FeatureCollection', 
+      name: 'blocks', 
+      crs: { 
+        "type": "name", 
+        "properties": {
+         "name": "urn:ogc:def:crs:OGC:1.3:CRS84" 
+        }
+      }, 
+      features: filtered_blocks
+    })
+  },[debouncedEpoque, blocks])
 
   const blockLayer = useMemo(() => {
     const blockLayerStyle: LayerProps = {
@@ -266,6 +295,7 @@ function App() {
         setBlockFid(e.features[0].properties.fid)
       }
       if (e.features[0].layer.id === 'buildings') {
+        console.log(e.features[0].properties)
         setSelectedBuilding({...e.features[0].properties})
       }
     }     
@@ -319,7 +349,15 @@ function App() {
   //block config 
 
   useEffect(() => {
-    const upd_features = blocks?.features.map((block) => {
+    const startTime = performance.now()
+    const label = mode
+    let acc_lvl = 0
+    let j = 0
+
+    const tree = new rbush()
+    tree.load({ type: 'FeatureCollection', features: filteredBuildings.features });
+    
+    const upd_features = filteredBlocks?.features.map((block) => {
       if (mode==='year') {
         block.properties.merchant = 0
         block.properties.industrial = 0
@@ -330,8 +368,11 @@ function App() {
         block.properties.nineties = 0
         block.properties.contemporary = 0
         block.properties.sum = 0
-        filteredBuildings?.features.map((building) => {
-          if (building.properties.block_fid === block.properties.fid) {
+        const candidates:GeoJSON = tree.search(block)
+        candidates?.features.map((building) => {
+          const r = intersection(building.geometry.coordinates, block.geometry.coordinates)
+          if (r && r.length > 0) {
+            
             if (building.properties.year_built <= 1871) {
               block.properties.merchant += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
             }
@@ -356,6 +397,8 @@ function App() {
             if (building.properties.year_built > 2007 && building.properties.year_built <= 2025) {
               block.properties.contemporary += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
             }
+            acc_lvl += building.properties.lvl
+            j++
           }
         })
 
@@ -393,8 +436,10 @@ function App() {
         block.properties.tech = 0
         block.properties.utility = 0
         block.properties.sum = 0
-        filteredBuildings?.features.map((building) => {
-          if (building.properties.block_fid === block.properties.fid) {
+        const candidates:GeoJSON = tree.search(block)
+        candidates?.features.map((building) => {
+          const r = intersection(building.geometry.coordinates, block.geometry.coordinates)
+          if (r && r.length > 0) {
             if (building.properties.building_2 === 'detached_house') {
               block.properties.single += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
             }
@@ -419,6 +464,8 @@ function App() {
             if (building.properties.building_2 === 'utility') {
               block.properties.utility += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
             }
+            acc_lvl += building.properties.lvl
+            j++
           }
         })
         block.properties.sum = 
@@ -451,11 +498,11 @@ function App() {
         block.properties.mid = 0
         block.properties.high = 0
         block.properties.sky = 0  
-        filteredBuildings?.features.map((building) => {
-          if (building.properties.block_fid === block.properties.fid) {
+        const candidates:GeoJSON = tree.search(block)
+        candidates?.features.map((building) => {
+          const r = intersection(building.geometry.coordinates, block.geometry.coordinates)
+          if (r && r.length > 0) {
             acc += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
-          }
-          if (building.properties.block_fid === block.properties.fid) {
             if (building.properties.lvl >= 1 && building.properties.lvl < 5) {
               block.properties.low += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
             }
@@ -469,27 +516,21 @@ function App() {
               block.properties.sky += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
             }
           }
+          acc_lvl += building.properties.lvl
+          j++
         })
-        if (blockFid && blockFid === block.properties.fid) {
-          setBlockStat({...block.properties})
-        }
+        block.properties.sum = block.properties.low + block.properties.mid+block.properties.high + block.properties.sky
         if (far) {
           block.properties.far = acc*1.0/block.properties.sqr
         }
         if (!far) {
           block.properties.gsi = acc*1.0/block.properties.sqr
         }
-        block.properties.sum = block.properties.low + block.properties.mid+block.properties.high + block.properties.sky
-      }
-
-      let acc_lvl = 0
-      let j = 0
-      filteredBuildings?.features.map((building) => {
-        if (building.properties.block_fid === block.properties.fid) {
-          acc_lvl += building.properties.lvl
-          j++
+        if (blockFid && blockFid === block.properties.fid) {
+          setBlockStat({...block.properties})
         }
-      })
+
+      }
       block.properties.mean_lvl = acc_lvl*1.0/j
       if (j === 0) {
         block.properties.mean_lvl = 0
@@ -515,8 +556,10 @@ function App() {
         console.log(properties)
         setBlockStat(accumulateValues(properties))
       }
+      const elapsedTime = performance.now() - startTime
+      console.log(`${label} took ${elapsedTime.toFixed(2)}ms to run`)
     }
-  },[blocks, blockFid, filteredBuildings, mode, far])
+  },[filteredBlocks, blockFid, filteredBuildings, mode, far])
 
   useEffect(() => {
     if (mode === 'density') {
@@ -926,13 +969,13 @@ function App() {
   },[blockStat, mode])
 
   const footnote = useMemo(() => {
-                if (mode==='year') {
-                  return <span>Индекс гомогенности</span>
-                } else if (mode==='usage') {
-                  return <span>Индекс разнообразия</span>
-                } else if (mode==='density') {
-                  return far ? <span>Floor Surface Index</span> : <span>Ground Surface Index</span>
-                }    
+    if (mode==='year') {
+      return <span>Индекс гомогенности</span>
+    } else if (mode==='usage') {
+      return <span>Индекс разнообразия</span>
+    } else if (mode==='density') {
+      return far ? <span>Floor Surface Index</span> : <span>Ground Surface Index</span>
+    }    
   },[mode,far])
 
   return (

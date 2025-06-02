@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+
 export const BASE_URL = 'http://localhost:5173/'
 
 export const indexOfMax = (arr: number[]) => {
@@ -84,3 +86,17 @@ export const reverseSimpsonsIndex = (values: number[]) => {
 export function getPublicImage(path: string) {
   return `${import.meta.env.BASE_URL}${path}`;
 }
+
+export const useDebounce = (value: number[], delay: number) => {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => clearTimeout(handler);
+  }, [value, delay]);
+
+  return debouncedValue;
+};
