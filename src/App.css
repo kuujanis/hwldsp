@@ -39,3 +39,6 @@
     z-index: 20;
     display: flex;
 } */
+ .ant-switch:not(.ant-switch-checked) {
+  background-color: #36a200; /* red background for OFF state */
+}

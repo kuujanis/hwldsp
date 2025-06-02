@@ -66,7 +66,7 @@ const darkTheme = {
     },
     // --- Switch ---
     Switch: {
-      colorPrimary: '#424242',     // White when "on"
+      colorPrimary: '#ff0099',     // White when "on"
       colorPrimaryHover: '#e0e0e0',// Light gray hover
       colorBgContainer: '#424242', // Gray when "off"
       handleBg: '#ffffff',         // White handle
@@ -194,6 +194,7 @@ function App() {
           9, 0,
           10, ['*',['get', 'mean_lvl'],10]
         ],
+        'fill-extrusion-opacity': 0.75
       }
     }
     if (mode==='year') {
@@ -282,7 +283,7 @@ function App() {
           9, 0,
           10, ['*',['get', 'lvl'],5]
         ],
-        'fill-extrusion-opacity': 0.75
+        'fill-extrusion-opacity': 1
       }
     }
     return buildingLayerStyle
@@ -307,8 +308,6 @@ function App() {
       setSelectedBlock(null)
     }
   },[])
-
-
 
   const blockSelect: LayerProps = useMemo(() => {
     return {
@@ -371,7 +370,6 @@ function App() {
         const candidates: FeatureCollection<Geometry, GeoJsonProperties> = tree.search(block)
         // console.log(candidates)
         candidates?.features.map((building: Feature<Geometry, GeoJsonProperties>) => {
-          console.log(booleanIntersection(building,block))
           if (booleanIntersection(building,block) && building.properties) {
             
             if (building.properties.year_built <= 1871) {
@@ -500,8 +498,7 @@ function App() {
         block.properties.sky = 0  
         const candidates: FeatureCollection<Geometry, GeoJsonProperties> = tree.search(block)
         candidates?.features.map((building) => {
-          if (building.properties) {
-            if (booleanIntersection(building,block)) {
+            if (booleanIntersection(building,block) && building.properties) {
               acc += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
               if (building.properties.lvl >= 1 && building.properties.lvl < 5) {
                 block.properties.low += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
@@ -515,7 +512,6 @@ function App() {
               if (building.properties.lvl >= 17) {
                 block.properties.sky += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
               }
-            }
             acc_lvl += building.properties.lvl
             j++
           }
@@ -649,10 +645,10 @@ function App() {
               blockStat?.sky,
             ],
             backgroundColor: [
-              '#80fc03',
-              '#fcba03',
-              '#fc0303',
-              '#a503fc',
+              '#c6d9ec',
+              '#7fa8d6',
+              '#3a7bbf',
+              '#0a2e6a',
             ],
             borderColor: '#000000', // Black borders
           },
@@ -884,33 +880,33 @@ function App() {
             data: lvlStat,
             backgroundColor: [
               '#ffffff',
-              '#80fc03',
-              '#80fc03',
-              '#80fc03',
-              '#fcba03',
-              '#fcba03',
-              '#fcba03',
-              '#fcba03',
-              '#fcba03',
-              '#fcba03',
-              '#fc0303',
-              '#fc0303',
-              '#fc0303',
-              '#fc0303',
-              '#fc0303',
-              '#fc0303',
-              '#fc0303',
-              '#a503fc',
-              '#a503fc',
-              '#a503fc',
-              '#a503fc',
-              '#a503fc',
-              '#a503fc',
-              '#a503fc',
-              '#a503fc',
-              '#a503fc',
-              '#a503fc',
-              '#a503fc',
+              '#c6d9ec',
+              '#c6d9ec',
+              '#c6d9ec',
+              '#c6d9ec',
+              '#7fa8d6',
+              '#7fa8d6',
+              '#7fa8d6',
+              '#7fa8d6',
+              '#7fa8d6',
+              '#3a7bbf',
+              '#3a7bbf',
+              '#3a7bbf',
+              '#3a7bbf',
+              '#3a7bbf',
+              '#3a7bbf',
+              '#3a7bbf',
+              '#0a2e6a',
+              '#0a2e6a',
+              '#0a2e6a',
+              '#0a2e6a',
+              '#0a2e6a',
+              '#0a2e6a',
+              '#0a2e6a',
+              '#0a2e6a',
+              '#0a2e6a',
+              '#0a2e6a',
+              '#0a2e6a',
             ],
             borderColor: '#ffffff', // Black borders
           },
@@ -1105,10 +1101,16 @@ function App() {
             {blockMode && <Layer {...blockSelect}/>}
           </Source>
           <Button 
-            style={{position: 'absolute', bottom: '10px', right: '10px'}}
-            onClick={toggleBlockMode} size='large'
+            style={{position: 'absolute', bottom: '50px', right: '10px', height: '40px', width: '100px'}}
+            onClick={toggleBlockMode} size='large' type={!blockMode ? 'default' : 'primary'}
           >
-            {blockMode? <b>Кварталы</b> : <b>Здания</b>}
+            <b>Кварталы</b>
+          </Button>
+          <Button 
+            style={{position: 'absolute', bottom: '10px', right: '10px', height: '40px', width: '100px'}}
+            onClick={toggleBlockMode} size='large' type={blockMode ? 'default' : 'primary'}
+          >
+            <b>Здания</b>
           </Button>
         </Map>
         <div style={{
@@ -1116,9 +1118,14 @@ function App() {
             flexDirection: 'column', alignItems: 'center', 
             justifyContent: 'space-between', backgroundColor: '#141414'
           }}>
-          {articleMode ? <Article 
-            setEpoque={setEpoque} mapRef={mapRef.current} 
-            /> : <BuildingInfo selectedBuilding={selectedBuilding} blockMode={blockMode} mapRef={mapRef.current} />}
+          {articleMode ? 
+            <Article 
+              setEpoque={setEpoque} mapRef={mapRef.current} 
+            /> : 
+            <BuildingInfo 
+              selectedBuilding={selectedBuilding} blockMode={blockMode} filteredBuildings={filteredBuildings}
+              mapRef={mapRef.current} setSelectedBuilding={setSelectedBuilding}
+            />}
           <div style={{
             height: '10%', width: '100%', backgroundColor: '#000000', 
             display: 'flex', flexDirection: 'row', justifyContent: 'center',

@@ -1,21 +1,51 @@
 import { MapRef } from "@vis.gl/react-maplibre"
 import { AutoComplete, Input } from "antd"
-import { useMemo, useState } from "react"
+import rbush from "geojson-rbush"
+import { GeoJSONFeature } from "maplibre-gl"
+import { Dispatch, SetStateAction, useMemo, useState } from "react"
+
+interface GeoJSON {
+  type: "FeatureCollection",
+  name: string,
+  crs: {type: string, properties: {[name: string]: string;}}
+  features: GeoJSONFeature[],
+  
+}
 
 interface Info {
     selectedBuilding: {[name: string]: string|number}|null,
     blockMode: boolean,
-    mapRef: MapRef | null
+    mapRef: MapRef | null,
+    filteredBuildings: GeoJSON,
+    setSelectedBuilding: Dispatch<SetStateAction<{[name: string]: string|number}|null>>
 }
 
-export const BuildingInfo = ({selectedBuilding, blockMode, mapRef}: Info) => {
+export const BuildingInfo = ({selectedBuilding,setSelectedBuilding, blockMode, mapRef, filteredBuildings}: Info) => {
     const [suggestions, setSuggestions] = useState([])
+
+    const tree = useMemo(() => {
+        const tree = rbush()
+        tree.load({ type: 'FeatureCollection', features: filteredBuildings.features });
+        return tree
+    },[filteredBuildings])
 
     const onSearch = async (value: string) => {
         const res = await fetch(`https://dadata.connectgas.ru/suggestions/api/4_1/rs/suggest/address?query=${value}&count=1`)
         .then((res) => res.json())
         const data = res['suggestions'][0]['data']
         mapRef?.flyTo({center: [data['geo_lon'], data['geo_lat']], zoom: 14, duration: 2000})
+
+        const search_result = tree.search({
+            "type": "Feature",
+            "properties": {},
+            "geometry": {
+              "coordinates": [data['geo_lon'], data['geo_lat']],
+              "type": "Point"
+            }
+        })
+        if (search_result && search_result.features.length > 0) {
+            setSelectedBuilding(search_result.features[0].properties)
+        }
     }
 
     const onChange = async (value: string) => {

@@ -105,7 +105,7 @@ export const useDebounce = (value: number[], delay: number) => {
 
 export const extractCoord = (geometry: Geometry) => {
   // console.log(geometry.type)
-  if (geometry.type === 'MultiPolygon') {
+  if (geometry.type === 'MultiPolygon'||geometry.type === 'Polygon') {
     return geometry.coordinates
   } else return null
 }

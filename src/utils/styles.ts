@@ -56,10 +56,11 @@ export const buildingUsage: DataDrivenPropertyValueSpecification<string> = [
 ]
 
 export const buildinglvl:TStops = [
-  [1, '#80fc03'],
-  [3, '#fcba03'],
-  [10, '#fc0303'],
-  [17, '#a503fc'],
+  [0, '#ffffff'],  
+  [1, '#c6d9ec'],  
+  [4, '#7fa8d6'],  
+  [10, '#3a7bbf'], 
+  [17, '#0a2e6a'] 
 ]
 
 export const blockUsage: DataDrivenPropertyValueSpecification<string> = [
@@ -85,21 +86,22 @@ export const blockUsage: DataDrivenPropertyValueSpecification<string> = [
 ]
 
 export const GSI_STOPS:TStops = [
-  [0,'#101010'],
-  [0.01, 'rgba(0, 255, 0, 0.3)'],
-  [0.05, 'rgba(174, 255, 0, 0.5)'],
-  [0.1, 'rgba(255, 221, 0, 0.7)'],
-  [0.2, 'rgba(255, 123, 0, 0.9)'],
-  [0.3, 'rgba(255, 0, 0,1)'],
+  [0, 'rgba(54, 162, 0, 0)'],
+  [0.01, 'rgba(54, 162, 0, 0.1)'],
+  [0.05, 'rgba(54, 162, 0, 0.25)'],
+  [0.1, 'rgba(54, 162, 0, 0.5)'],
+  [0.2, 'rgba(54, 162, 0, 0.75)'],
+  [0.3, 'rgb(54, 162, 0)'],
 ]
 
 export const FAR_STOPS:TStops = [
-  [0,'#101010'],
-  [0.05, 'rgba(0, 255, 0, 0.3)'],
-  [0.25, 'rgba(174, 255, 0, 0.5)'],
-  [0.5, 'rgba(255, 221, 0, 0.7)'],
-  [0.75, 'rgba(255, 123, 0, 0.9)'],
-  [1, 'rgba(255, 0, 0,1)'],
+  [0, 'rgba(255, 0, 174,0)'],      
+  [0.05, 'rgba(255, 0, 174,0.15)'],   
+  [0.25, 'rgba(255, 0, 174,0.3)'],    
+  [0.5, 'rgba(255, 0, 174,0.5)'],     
+  [0.75, 'rgba(255, 0, 174,0.65)'],    
+  [1, 'rgba(255, 0, 174,0.8)'],       
+  [2, 'rgba(255, 0, 174,1)'] 
 ]
 
 export const buildingSelection: LayerProps = {
