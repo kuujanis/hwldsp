@@ -369,7 +369,9 @@ function App() {
         block.properties.contemporary = 0
         block.properties.sum = 0
         const candidates: FeatureCollection<Geometry, GeoJsonProperties> = tree.search(block)
+        // console.log(candidates)
         candidates?.features.map((building: Feature<Geometry, GeoJsonProperties>) => {
+          console.log(booleanIntersection(building,block))
           if (booleanIntersection(building,block) && building.properties) {
             
             if (building.properties.year_built <= 1871) {
