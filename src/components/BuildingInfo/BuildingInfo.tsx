@@ -63,7 +63,6 @@ export const BuildingInfo = ({selectedBuilding,setSelectedBuilding, blockMode, m
         return options
     },[suggestions])
     
-        const word = blockMode ? 'кварталу' : 'зданию'
         if (selectedBuilding) {
             return <div style={{textAlign: 'left', alignSelf: 'baseline', padding: '10px'}}>
                 <h2>Годы постройки: {selectedBuilding.aproxdate ?? selectedBuilding.year_built}</h2>
@@ -90,7 +89,8 @@ export const BuildingInfo = ({selectedBuilding,setSelectedBuilding, blockMode, m
                 }
             </div>
         } else {
-            return <div style={{marginTop: '30px'}}>
+            return <div style={{marginTop: '30px', marginLeft: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
+                <div>
                     <AutoComplete
                         popupClassName="certain-category-search-dropdown"
                         popupMatchSelectWidth={500}
@@ -102,7 +102,10 @@ export const BuildingInfo = ({selectedBuilding,setSelectedBuilding, blockMode, m
                         placeholder="Введите адрес" size="large" 
                         />
                     </AutoComplete>
-                <h3>...или кликните по {word} на карте</h3>
+                </div>
+                <div style={{fontSize: '1.2rem', marginTop: '20px', textAlign: 'center'}}>
+                    {!blockMode ? <b>...или кликните по зданию на карте</b> : <b>Кликните по кварталу для получения статистики</b>}
+                </div>
             </div>
         }
 

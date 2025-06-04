@@ -43,3 +43,29 @@
  .ant-switch:not(.ant-switch-checked) {
   background-color: #36a200; /* red background for OFF state */
 }
+.siderButton {
+  position: absolute;
+  top: 50%;
+  background-color: black;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 30px;
+  height: 60px;
+  border-radius: 5px;
+}
+.siderButton:hover {
+  border: 1px solid white;
+}
+.siderButton:hover {
+  border: 1px solid white;
+}
+.right {
+  right: 10px
+}
+.left {
+  left: 10px
+}
+.ant-btn-primary {
+  color: black !important;
+}

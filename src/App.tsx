@@ -15,6 +15,7 @@ import rbush from 'geojson-rbush';
 import { Feature, FeatureCollection, GeoJsonProperties, Geometry } from 'geojson';
 import { Scale } from './components/Scales/Scale';
 import { BarList } from './components/BarChart.tsx/BarChart';
+import { LeftOutlined, RightOutlined } from '@ant-design/icons';
 
 
 const BLOCKS_URL = new URL('./assets/blocks_n.geojson', import.meta.url).href;
@@ -103,12 +104,16 @@ function App() {
   const [articleMode, toggleArticleMode] = useReducer((prevState) => !prevState, true)
   const [selectedBuilding, setSelectedBuilding] = useState<{[name: string]: string|number}|null>(null)
 
+  const [left, toggleLeft] = useReducer((value) => !value, true)
+  const [right, toggleRight] = useReducer((value) => !value, true)
+
   const mapRef = useRef<MapRef | null>(null)
   // const [load, setLoad] = useState<boolean>(true)
 
   ChartJS.register(ArcElement, Tooltip, CategoryScale, LinearScale, BarElement, Title, Legend, legendPlugin);
 
 
+  // initial fetch
 
   const fetchBlocks = async () => {
     try{
@@ -175,6 +180,12 @@ function App() {
       features: filtered_blocks
     })
   },[debouncedEpoque, blocks])
+
+  // map settings
+
+  const mapSettings = useMemo(() => {
+    return articleMode ? disabledSettings : enabledSettings
+  },[articleMode])
 
   const blockLayer = useMemo(() => {
     const blockLayerStyle: LayerProps = {
@@ -349,7 +360,7 @@ function App() {
     }
   },[selectedBuilding])
 
-  //block config 
+  //main algorithm
 
   useEffect(() => {
     const startTime = performance.now()
@@ -590,6 +601,8 @@ function App() {
     }
   },[filteredBuildings, mode, far, selectedBlock])
 
+  // chart config
+
   const data: ChartData<"doughnut", (number | undefined)[], string> = useMemo(() => {
     if (mode ==='year') {
       return {
@@ -699,7 +712,6 @@ function App() {
     }
   },[blockStat, mode])
 
-  
   const doughnutOptions: ChartOptions<'doughnut'> = useMemo(() => {
     return {
       responsive: true,
@@ -723,7 +735,6 @@ function App() {
       }
     }
   },[]);
-  // const barOptions: ChartOptions<'bar'> = useMemo(() => {
   //   return {
   //     indexAxis: 'y', 
   //     responsive: true,
@@ -844,10 +855,6 @@ function App() {
       }
     }},[]);
 
-  const mapSettings = useMemo(() => {
-    return articleMode ? disabledSettings : enabledSettings
-  },[articleMode])
-
   const listData = useMemo(() => {
     if (mode === 'usage') {
       const arr = [
@@ -929,6 +936,18 @@ function App() {
     }    
   },[mode,far])
 
+  useEffect(() => {
+    if(selectedBlock) {
+      if (
+        selectedBlock.properties.year_formed >= debouncedEpoque[1] || 
+        selectedBlock.properties.year_gone < debouncedEpoque[1] || 
+        selectedBlock.properties.year_formed <= debouncedEpoque[0]
+      ) {
+        setBlockFid(null)
+      }
+    }
+  },[debouncedEpoque,selectedBlock])
+
   return (
     <ConfigProvider theme={darkTheme}>
     <div className='main'>
@@ -939,7 +958,7 @@ function App() {
         <b>How Old is Podol 2.0</b>
       </div>
       <div style={{width: '100vw', height: '84vh', display: 'flex', flexDirection: 'row'}}>
-        <div style={{width: '25%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', backgroundColor: '#141414'}}>
+        {(left || articleMode) && <div style={{minWidth: '25%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', backgroundColor: '#141414', transition: 'width 0.5s ease'}}>
           <div style={{marginBottom: 10, display: 'flex', flexDirection: 'row', alignItems: 'center'}}>
               <Select 
                 style={{width: 200}} 
@@ -1009,7 +1028,7 @@ function App() {
             </div> 
 
           }
-        </div>
+        </div>}
         <Map
           ref={mapRef}
           initialViewState={{
@@ -1018,7 +1037,7 @@ function App() {
             fitBoundsOptions: {minZoom: 9},
             zoom: 11,
           }}
-          style={{width: '50%', height: '100%'}}
+          style={{maxWidth: '100%', minWidth: '50%', height: '100%', transition: 'width 0.5s ease'}}
           mapStyle="https://api.maptiler.com/maps/f40a1280-834e-43de-b7ea-919faa734af4/style.json?key=5UXjcwcX8UyLW6zNAxsl"
           interactiveLayerIds={['buildings','blocks']}
           onClick={onClick}
@@ -1069,11 +1088,17 @@ function App() {
           >
             <b>Здания</b>
           </Button>
+          {!articleMode && <div className='siderButton right' onClick={toggleRight}>
+            {right ? <RightOutlined/> : <LeftOutlined/>}
+          </div>}
+          {!articleMode && <div className='siderButton left' onClick={toggleLeft}>
+            {left ? <LeftOutlined/> : <RightOutlined/>}
+          </div>}
         </Map>
-        <div style={{
-            width: '25%', height: '100%', display: 'flex', 
+        {(right || articleMode) && <div style={{
+            minWidth: '25%', height: '100%', display: 'flex', 
             flexDirection: 'column', alignItems: 'center', 
-            justifyContent: 'space-between', backgroundColor: '#141414'
+            justifyContent: 'space-between', backgroundColor: '#141414', transition: 'width 0.5s ease'
           }}>
           {articleMode ? 
             <Article 
@@ -1092,7 +1117,7 @@ function App() {
               {articleMode ? <span>Активировать карту</span> : <span>Назад к статье</span>}
             </Button>
           </div>
-        </div>
+        </div>}
 
       </div>
       <div style={{height: '8vh', display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center'}}>
