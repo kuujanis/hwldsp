@@ -698,116 +698,6 @@ function App() {
       }
     }
   },[blockStat, mode])
-  const barData: ChartData<"bar", (number | undefined)[], string> = useMemo(() => {
-    if (mode ==='year') {
-      return {
-        labels: [
-          '1781-1871', 
-          '1872-1921', 
-          '1922-1941', 
-          '1942-1959', 
-          '1960-1975', 
-          '1976-1991',
-          '1992-2007',
-          '2008-2025'
-        ],
-        datasets: [
-          {
-            label: 'Площадь, м²',
-            data: [
-              blockStat?.merchant, 
-              blockStat?.industrial, 
-              blockStat?.revolutionary, 
-              blockStat?.postwar, 
-              blockStat?.urban,
-              blockStat?.stagnation,
-              blockStat?.nineties,
-              blockStat?.contemporary 
-            ],
-            backgroundColor: [
-              '#e57316',
-              '#e5a717',
-              '#e6caa0',
-              '#f3f3f3',
-              '#a1e6db',
-              '#17afe6',
-              '#1616ff',
-              '#ab17e6'
-            ],
-            borderColor: '#000000', // Black borders
-          },
-        ],
-      }
-    }
-    if (mode ==='density') {
-      return {
-        labels: [
-          'Малоэтажная застройка', 
-          'Среднеэтажная застройка', 
-          'Многоэтажная застройка', 
-          'Высотная застройка', 
-        ],
-        datasets: [
-          {
-            label: 'Площадь, м²',
-            data: [
-              blockStat?.low, 
-              blockStat?.mid, 
-              blockStat?.high, 
-              blockStat?.sky,
-            ],
-            backgroundColor: [
-              '#80fc03',
-              '#fcba03',
-              '#fc0303',
-              '#a503fc',
-            ],
-            borderColor: '#000000', // Black borders
-          },
-        ],
-      }
-    }
-    else {
-      return {
-        labels: [
-          ['Одноквартирные','здания'], 
-          ['Многоквартирные','здания'], 
-          'Общежития', 
-          ['Многофункциональные','здания'], 
-          ['Офисные и','торговые здания'], 
-          ['Общественные','здания'],
-          ['Производственные','здания'],
-          ['Хозяйственные','здания']
-        ],
-        datasets: [
-          {
-            label: 'Площадь, м²',
-            data: [
-              blockStat?.single, 
-              blockStat?.multiple, 
-              blockStat?.dormi, 
-              blockStat?.mixed, 
-              blockStat?.commercial,
-              blockStat?.public,
-              blockStat?.tech,
-              blockStat?.utility
-            ],
-            backgroundColor: [
-              'rgb(184, 255, 104)',
-              'rgb(252, 195, 50)',
-              'rgb(255, 197, 135)',
-              'rgb(254, 127, 0)',
-              'rgb(255, 44, 44)',
-              'rgb(64, 210, 255)',
-              'rgb(54, 43, 123)',
-              'rgb(32, 134, 117)',
-            ],
-            borderColor: '#000000', // Black borders
-          },
-        ],
-      }
-    }
-  },[blockStat, mode])
 
   
   const doughnutOptions: ChartOptions<'doughnut'> = useMemo(() => {
@@ -959,29 +849,55 @@ function App() {
   },[articleMode])
 
   const listData = useMemo(() => {
-    const arr = [
-      blockStat?.single ?? 0,
-      blockStat?.multiple ?? 0,
-      blockStat?.dormi ?? 0,
-      blockStat?.mixed ?? 0,
-      blockStat?.commercial ?? 0,
-      blockStat?.public ?? 0,
-      blockStat?.tech ?? 0,
-      blockStat?.utility ?? 0,
-    ]
-    const max = Math.max(...arr)
+    if (mode === 'usage') {
+      const arr = [
+        blockStat?.single ?? 0,
+        blockStat?.multiple ?? 0,
+        blockStat?.dormi ?? 0,
+        blockStat?.mixed ?? 0,
+        blockStat?.commercial ?? 0,
+        blockStat?.public ?? 0,
+        blockStat?.tech ?? 0,
+        blockStat?.utility ?? 0,
+      ]
+      const max = Math.max(...arr)
 
-    return [              
-      { label: 'Индивидуальные жилые дома', value: blockStat?.single, color: 'rgb(184, 255, 104)', maxValue: max },
-      { label: 'Многоквартирные дома', value: blockStat?.multiple, color: 'rgb(252, 195, 50)', maxValue: max },
-      { label: 'Бараки и казармы', value: blockStat?.dormi, color: 'rgb(255, 197, 135)', maxValue: max },
-      { label: 'Многофункциональные здания', value: blockStat?.mixed, color: 'rgb(254, 127, 0)', maxValue: max },
-      { label: 'Торговые и офисные здания', value: blockStat?.commercial, color: 'rgb(255, 44, 44)', maxValue: max },
-      { label: 'Общественные здания', value: blockStat?.public, color: 'rgb(64, 210, 255)', maxValue: max },
-      { label: 'Производственные здания', value: blockStat?.tech, color: 'rgb(54, 43, 123)', maxValue: max },
-      { label: 'Хозяйственные постройки', value: blockStat?.utility, color: 'rgb(32, 134, 117)', maxValue: max },
-    ]
-  },[blockStat]);
+      return [              
+        { label: 'Индивидуальные жилые дома', value: blockStat?.single ?? 0, color: 'rgb(184, 255, 104)', maxValue: max },
+        { label: 'Многоквартирные дома', value: blockStat?.multiple ?? 0, color: 'rgb(252, 195, 50)', maxValue: max },
+        { label: 'Бараки и казармы', value: blockStat?.dormi ?? 0, color: 'rgb(255, 197, 135)', maxValue: max },
+        { label: 'Многофункциональные здания', value: blockStat?.mixed ?? 0, color: 'rgb(254, 127, 0)', maxValue: max },
+        { label: 'Торговые и офисные здания', value: blockStat?.commercial ?? 0, color: 'rgb(255, 44, 44)', maxValue: max },
+        { label: 'Общественные здания', value: blockStat?.public ?? 0, color: 'rgb(64, 210, 255)', maxValue: max },
+        { label: 'Производственные здания', value: blockStat?.tech ?? 0, color: 'rgb(54, 43, 123)', maxValue: max },
+        { label: 'Хозяйственные постройки', value: blockStat?.utility ?? 0, color: 'rgb(32, 134, 117)', maxValue: max },
+      ]
+    } else {
+      const arr = [
+        blockStat?.merchant ?? 0,
+        blockStat?.industrial ?? 0,
+        blockStat?.revolutionary ?? 0, 
+        blockStat?.postwar ?? 0,
+        blockStat?.urban ?? 0,
+        blockStat?.stagnation ?? 0,
+        blockStat?.nineties ?? 0,
+        blockStat?.contemporary ?? 0,
+      ]
+      const max = Math.max(...arr)
+
+      return [              
+        { label: '1781-1870', value: blockStat?.merchant ?? 0, color: '#e57316', maxValue: max },
+        { label: '1871-1921', value: blockStat?.industrial ?? 0, color: '#e5a717', maxValue: max },
+        { label: '1921-1940', value: blockStat?.revolutionary ?? 0, color: '#e6caa0', maxValue: max },
+        { label: '1941-1959', value: blockStat?.postwar ?? 0, color: '#f3f3f3', maxValue: max },
+        { label: '1960-1974', value: blockStat?.urban ?? 0, color: '#a1e6db', maxValue: max },
+        { label: '1975-1991', value: blockStat?.stagnation ?? 0, color: '#17afe6', maxValue: max },
+        { label: '1992-2007', value: blockStat?.nineties ?? 0, color: '#1616ff', maxValue: max },
+        { label: '2008-2025', value: blockStat?.contemporary ?? 0, color: '#ab17e6', maxValue: max },
+      ]      
+    }
+
+  },[blockStat, mode]);
 
   const diversityIndex= useMemo(() => {
     if (blockStat) {

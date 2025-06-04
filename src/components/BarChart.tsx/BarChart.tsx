@@ -13,14 +13,14 @@ interface BarListProps {
 
 export const BarList: React.FC<BarListProps> = ({ data }) => {
   return (
-    <div style={{ width: '90%', fontFamily: 'sans-serif' }}>
+    <div style={{ width: '90%', fontFamily: 'sans-serif', marginTop: '10px', padding: '10px' }}>
       {data.map((item, idx) => (
         <div
           key={idx}
           style={{
             display: 'flex',
             flexDirection: 'column',
-            marginBottom: '12px',
+            marginBottom: '16px',
           }}
         >
           <div
@@ -49,13 +49,13 @@ export const BarList: React.FC<BarListProps> = ({ data }) => {
               {item.label}
             </div>
             <div style={{ fontSize: '14px'}}>
-              {item.value}
+              {(item.value/10000).toFixed(1)} га
             </div>
           </div>
           <div
             style={{
               height: '6px',
-              backgroundColor: '#e0e0e0',
+              backgroundColor: '#4f4f4f',
               width: '100%',
               overflow: 'hidden',
             }}
