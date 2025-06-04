@@ -1,0 +1,7 @@
+.scaleTab {
+  display: grid;
+  grid-template-columns: 0% 12% 16% 18% 16% 18% 16% 0%;
+  height: 22px;
+  width: 280px;
+  color: white;
+}

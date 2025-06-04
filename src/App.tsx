@@ -6,13 +6,15 @@ import { GeoJSONFeature, MapLayerMouseEvent } from 'maplibre-gl';
 import { Button, ConfigProvider, InputNumber, Select, Slider, Switch } from 'antd';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title, TooltipItem, ChartData, ChartOptions } from "chart.js";
 import { Bar, Doughnut } from "react-chartjs-2";
-import { accumulateValues, extractObjects, indexOfMax, lvlStatDefault, enabledSettings, disabledSettings, simpsonsIndex, reverseSimpsonsIndex, useDebounce, booleanIntersection } from './utils/utils';
+import { accumulateValues, extractObjects, indexOfMax, lvlStatDefault, enabledSettings, disabledSettings, simpsonsIndex, reverseSimpsonsIndex, useDebounce, booleanIntersection, legendPlugin } from './utils/utils';
 import { blockUsage, buildinglvl, buildingUsage, EPOQUES, FAR_STOPS, GSI_STOPS } from './utils/styles';
 import { Article } from './components/Article/Article';
 import { BuildingInfo } from './components/BuildingInfo/BuildingInfo';
 import { Epoque } from './components/Epoque/Epoque';
 import rbush from 'geojson-rbush';
 import { Feature, FeatureCollection, GeoJsonProperties, Geometry } from 'geojson';
+import { Scale } from './components/Scales/Scale';
+import { BarList } from './components/BarChart.tsx/BarChart';
 
 
 const BLOCKS_URL = new URL('./assets/blocks_n.geojson', import.meta.url).href;
@@ -104,7 +106,7 @@ function App() {
   const mapRef = useRef<MapRef | null>(null)
   // const [load, setLoad] = useState<boolean>(true)
 
-  ChartJS.register(ArcElement, Tooltip, CategoryScale, LinearScale, BarElement, Title, Legend);
+  ChartJS.register(ArcElement, Tooltip, CategoryScale, LinearScale, BarElement, Title, Legend, legendPlugin);
 
 
 
@@ -314,7 +316,7 @@ function App() {
       id: 'blockSelection',
       type: 'fill-extrusion',
       paint: {
-        'fill-extrusion-color': 'black',
+        'fill-extrusion-color': 'rgb(4, 0, 46)',
         'fill-extrusion-height': [
           'interpolate',
           ['linear'],
@@ -378,10 +380,10 @@ function App() {
             if (building.properties.year_built > 1871 && building.properties.year_built <= 1921) {
               block.properties.industrial += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
             }
-            if (building.properties.year_built > 1921 && building.properties.year_built <= 1941) {
+            if (building.properties.year_built > 1921 && building.properties.year_built <= 1940) {
               block.properties.revolutionary += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
             }
-            if (building.properties.year_built > 1941 && building.properties.year_built <= 1959) {
+            if (building.properties.year_built > 1940 && building.properties.year_built <= 1959) {
               block.properties.postwar += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
             }
             if (building.properties.year_built > 1959 && building.properties.year_built <= 1974) {
@@ -768,14 +770,14 @@ function App() {
     else {
       return {
         labels: [
-          'Одноквартирные здания', 
-          'Многоквартирные здания', 
+          ['Одноквартирные','здания'], 
+          ['Многоквартирные','здания'], 
           'Общежития', 
-          'Многофункциональные здания', 
-          'Офисные и торговые здания', 
-          'Общественные здания',
-          'Производственные здания',
-          'Хозяйственные здания'
+          ['Многофункциональные','здания'], 
+          ['Офисные и','торговые здания'], 
+          ['Общественные','здания'],
+          ['Производственные','здания'],
+          ['Хозяйственные','здания']
         ],
         datasets: [
           {
@@ -807,6 +809,7 @@ function App() {
     }
   },[blockStat, mode])
 
+  
   const doughnutOptions: ChartOptions<'doughnut'> = useMemo(() => {
     return {
       responsive: true,
@@ -830,46 +833,52 @@ function App() {
       }
     }
   },[]);
-  const barOptions: ChartOptions<'bar'> = useMemo(() => {
-    return {
-      indexAxis: 'y', 
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          display: false,
-        },
-        tooltip: {
-          callbacks: {
-            label: function(context: TooltipItem<'bar'>) {
-              return `${context.dataset.label || ''}: ${context.raw}`;
-            }
-          }
-        },
-      },
-      scales: {
-        x: {
-          grid: {
-            color: '#737373',
-            lineWidth: 1
-          },
-          ticks: {
-            color: '#C0C0C0'
-          },
-          beginAtZero: true,
-        },
-        y: {
-          // grid: {
-          //   color: '#C0C0C0',
-          //   lineWidth: 1
-          // },
-          ticks: {
-            color: '#C0C0C0'
-          },
-        }
-      },
-      }
-  },[]);
+  // const barOptions: ChartOptions<'bar'> = useMemo(() => {
+  //   return {
+  //     indexAxis: 'y', 
+  //     responsive: true,
+  //     maintainAspectRatio: false,
+  //     plugins: {
+  //       legend: {
+  //         display: false,
+  //       },
+  //       tooltip: {
+  //         callbacks: {
+  //           label: function(context: TooltipItem<'bar'>) {
+  //             return `${context.dataset.label || ''}: ${context.raw}`;
+  //           }
+  //         }
+  //       },
+  //       afterDraw: legendPlugin
+  //     },
+  //     layout : {
+  //       padding: {
+  //         left: 24, // increase if needed
+  //       },
+  //     },
+  //     scales: {
+  //       x: {
+  //         grid: {
+  //           color: '#737373',
+  //           lineWidth: 1
+  //         },
+  //         ticks: {
+  //           color: '#C0C0C0'
+  //         },
+  //         beginAtZero: true,
+  //       },
+  //       y: {
+  //         // grid: {
+  //         //   color: '#C0C0C0',
+  //         //   lineWidth: 1
+  //         // },
+  //         ticks: {
+  //           color: '#C0C0C0'
+  //         },
+  //       }
+  //     },
+  //     }
+  // },[]);
 
     const lvlData = useMemo(() => {
       return {
@@ -928,7 +937,7 @@ function App() {
           beginAtZero: true,
           title: {
             display: true,
-            text: 'Площадь'
+            text: 'Площадь, м²'
           },
           grid: {
             color: '#737373',
@@ -936,6 +945,7 @@ function App() {
           },
         },
         x: {
+          beginAtZero: true,
           title: {
             display: true,
             text: 'Этажность'
@@ -947,6 +957,31 @@ function App() {
   const mapSettings = useMemo(() => {
     return articleMode ? disabledSettings : enabledSettings
   },[articleMode])
+
+  const listData = useMemo(() => {
+    const arr = [
+      blockStat?.single ?? 0,
+      blockStat?.multiple ?? 0,
+      blockStat?.dormi ?? 0,
+      blockStat?.mixed ?? 0,
+      blockStat?.commercial ?? 0,
+      blockStat?.public ?? 0,
+      blockStat?.tech ?? 0,
+      blockStat?.utility ?? 0,
+    ]
+    const max = Math.max(...arr)
+
+    return [              
+      { label: 'Индивидуальные жилые дома', value: blockStat?.single, color: 'rgb(184, 255, 104)', maxValue: max },
+      { label: 'Многоквартирные дома', value: blockStat?.multiple, color: 'rgb(252, 195, 50)', maxValue: max },
+      { label: 'Бараки и казармы', value: blockStat?.dormi, color: 'rgb(255, 197, 135)', maxValue: max },
+      { label: 'Многофункциональные здания', value: blockStat?.mixed, color: 'rgb(254, 127, 0)', maxValue: max },
+      { label: 'Торговые и офисные здания', value: blockStat?.commercial, color: 'rgb(255, 44, 44)', maxValue: max },
+      { label: 'Общественные здания', value: blockStat?.public, color: 'rgb(64, 210, 255)', maxValue: max },
+      { label: 'Производственные здания', value: blockStat?.tech, color: 'rgb(54, 43, 123)', maxValue: max },
+      { label: 'Хозяйственные постройки', value: blockStat?.utility, color: 'rgb(32, 134, 117)', maxValue: max },
+    ]
+  },[blockStat]);
 
   const diversityIndex= useMemo(() => {
     if (blockStat) {
@@ -1044,13 +1079,19 @@ function App() {
           </div>
           {mode !== 'density' && 
             <div style={{ width: '100%', height: '360px' }}>
-              <Bar id='bar' data={barData} options={barOptions}/>
+              <BarList data={listData}/>
             </div>
           }
-          {mode === 'density' && 
-            <div style={{ width: '100%', height: '320px' }}>
-              <Bar id='lvl' data={lvlData} options={lvlOptions}/>
-            </div>
+          {mode === 'density' &&
+            <div style={{width: '100%'}}>
+
+              <Scale far={far}/>
+
+              <div style={{ width: '100%', height: '300px' }}>
+                <Bar id='lvl' data={lvlData} options={lvlOptions}/>
+              </div>
+            </div> 
+
           }
         </div>
         <Map
@@ -1080,7 +1121,7 @@ function App() {
                 <Epoque articleMode={articleMode} setEpoque={setEpoque} epoque={epoque} frame={[1992, 2007]} color='#1616ff' tabid={'zeroes'}/>
                 <Epoque articleMode={articleMode} setEpoque={setEpoque} epoque={epoque} frame={[2008, 2025]} color='#ab17e6' tabid={'today'}/>
             </div>
-            <div  className='dateTab'>
+            <div className='dateTab'>
               <span></span>
               <span>1781</span>
               <span>1871</span>

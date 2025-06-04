@@ -7,7 +7,7 @@ export const blockSelection: LayerProps = {
   id: 'blockSelection',
   type: 'fill-extrusion',
   paint: {
-    'fill-extrusion-color': 'black',
+    'fill-extrusion-color': 'rgb(9, 0, 105)',
     'fill-extrusion-height': [
       'interpolate',
       ['linear'],
@@ -86,22 +86,23 @@ export const blockUsage: DataDrivenPropertyValueSpecification<string> = [
 ]
 
 export const GSI_STOPS:TStops = [
-  [0, 'rgba(54, 162, 0, 0)'],
-  [0.01, 'rgba(54, 162, 0, 0.1)'],
-  [0.05, 'rgba(54, 162, 0, 0.25)'],
-  [0.1, 'rgba(54, 162, 0, 0.5)'],
-  [0.2, 'rgba(54, 162, 0, 0.75)'],
-  [0.3, 'rgb(54, 162, 0)'],
+  [0, 'rgb(9, 27, 0)'],
+  [0.01, 'rgb(18, 54, 0)'],
+  [0.05, 'rgb(27, 81, 0)'],
+  [0.1, 'rgb(36, 108, 0)'],
+  [0.15, 'rgb(45, 135, 0)'],
+  [0.25, 'rgb(54, 162, 0)'],
+  [0.3, 'rgb(108, 225, 0)'],
 ]
 
 export const FAR_STOPS:TStops = [
-  [0, 'rgba(255, 0, 174,0)'],      
-  [0.05, 'rgba(255, 0, 174,0.15)'],   
-  [0.25, 'rgba(255, 0, 174,0.3)'],    
-  [0.5, 'rgba(255, 0, 174,0.5)'],     
-  [0.75, 'rgba(255, 0, 174,0.65)'],    
-  [1, 'rgba(255, 0, 174,0.8)'],       
-  [2, 'rgba(255, 0, 174,1)'] 
+  [0, 'rgb(20, 0, 15)'],      
+  [0.05, 'rgb(43,	0,	29)'],   
+  [0.25, 'rgb(85, 0, 58)'],    
+  [0.5, 'rgb(128,	0,	87)'],     
+  [0.75, 'rgb(170,	0,	116)'],    
+  [1, 'rgb(	213,	0,	145)'],       
+  [2, 'rgb(255, 0, 174)'] 
 ]
 
 export const buildingSelection: LayerProps = {

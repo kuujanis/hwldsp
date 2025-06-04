@@ -1,3 +1,4 @@
+import { Chart } from "chart.js";
 import { Feature, GeoJsonProperties, Geometry } from "geojson";
 import { intersection } from "martinez-polygon-clipping";
 import { useEffect, useState } from "react";
@@ -122,3 +123,33 @@ export const booleanIntersection = (a: Feature<Geometry,GeoJsonProperties>,b:Fea
     return true
   } else return false
 }
+
+export const legendPlugin = {
+  id: 'colorSquarePlugin',
+  afterDraw(chart: Chart) {
+    const ctx = chart.ctx;
+    const datasetMeta = chart.getDatasetMeta(0);
+    const indexScale = chart.scales['y']; // since indexAxis: 'y'
+
+    if (!ctx || !datasetMeta || !datasetMeta.data || !indexScale) return;
+
+    datasetMeta.data.forEach((bar, index) => {
+      const barModel = bar;
+      const backgroundColor = barModel.options?.backgroundColor ?? '#000000';
+
+      const y = indexScale.getPixelForTick(index);
+      const squareSize = 12;
+      const squareX = indexScale.left - squareSize - 6;
+      const squareY = y - squareSize / 2;
+      console.log('Drawing square for index', index, 'at', squareX, squareY);
+
+      ctx.save();
+      ctx.fillStyle = typeof backgroundColor === 'string' ? backgroundColor : backgroundColor[0];
+      ctx.fillRect(squareX, squareY, squareSize, squareSize);
+      ctx.strokeStyle = '#C0C0C0';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(squareX, squareY, squareSize, squareSize);
+      ctx.restore();
+    });
+  },
+};
