@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
-import {Layer, LayerProps, Map, MapRef, Source} from '@vis.gl/react-maplibre';
+import {Layer, LayerProps, Map, MapRef, NavigationControl, Source} from '@vis.gl/react-maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import './App.css'
 import { GeoJSONFeature, MapLayerMouseEvent } from 'maplibre-gl';
 import { Button, ConfigProvider, InputNumber, Select, Slider, Switch } from 'antd';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title, TooltipItem, ChartData, ChartOptions } from "chart.js";
 import { Bar, Doughnut } from "react-chartjs-2";
-import { accumulateValues, extractObjects, indexOfMax, lvlStatDefault, enabledSettings, disabledSettings, simpsonsIndex, reverseSimpsonsIndex, useDebounce, booleanIntersection, legendPlugin } from './utils/utils';
-import { blockUsage, buildinglvl, buildingUsage, EPOQUES, FAR_STOPS, GSI_STOPS } from './utils/styles';
+import { accumulateValues, extractObjects, indexOfMax, lvlStatDefault, enabledSettings, disabledSettings, simpsonsIndex, reverseSimpsonsIndex, useDebounce, booleanIntersection } from './utils/utils';
+import { blockLine, blockUsage, buildinglvl, buildingUsage, EPOQUES, FAR_STOPS, GSI_STOPS } from './utils/styles';
 import { Article } from './components/Article/Article';
 import { BuildingInfo } from './components/BuildingInfo/BuildingInfo';
 import { Epoque } from './components/Epoque/Epoque';
@@ -96,6 +96,7 @@ function App() {
   const [lvlStat, setLvlStat] = useState<number[]>(lvlStatDefault)
   const [blockFid, setBlockFid] = useState<number|null>(null)
   const [selectedBlock, setSelectedBlock] = useState<GeoJSONFeature|null>(null)
+  // const [volume, setVolume] = useState<boolean>(false)
 
   const [epoque, setEpoque] = useState<number[]>([1781,2025])
   const debouncedEpoque = useDebounce(epoque, 30)
@@ -110,7 +111,7 @@ function App() {
   const mapRef = useRef<MapRef | null>(null)
   // const [load, setLoad] = useState<boolean>(true)
 
-  ChartJS.register(ArcElement, Tooltip, CategoryScale, LinearScale, BarElement, Title, Legend, legendPlugin);
+  ChartJS.register(ArcElement, Tooltip, CategoryScale, LinearScale, BarElement, Title, Legend);
 
 
   // initial fetch
@@ -580,6 +581,7 @@ function App() {
         if (selectedBlock) {
           const candidates: FeatureCollection<Geometry, GeoJsonProperties> = tree.search(selectedBlock)
           candidates?.features.map((building) => {
+            
             if (booleanIntersection(building,selectedBlock) && building.properties) {
               if (Math.round(building.properties.lvl) === i) {
                 lvl += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
@@ -663,7 +665,7 @@ function App() {
               '#c6d9ec',
               '#7fa8d6',
               '#3a7bbf',
-              '#0a2e6a',
+              '#003fa8',
             ],
             borderColor: '#000000', // Black borders
           },
@@ -735,55 +737,11 @@ function App() {
       }
     }
   },[]);
-  //   return {
-  //     indexAxis: 'y', 
-  //     responsive: true,
-  //     maintainAspectRatio: false,
-  //     plugins: {
-  //       legend: {
-  //         display: false,
-  //       },
-  //       tooltip: {
-  //         callbacks: {
-  //           label: function(context: TooltipItem<'bar'>) {
-  //             return `${context.dataset.label || ''}: ${context.raw}`;
-  //           }
-  //         }
-  //       },
-  //       afterDraw: legendPlugin
-  //     },
-  //     layout : {
-  //       padding: {
-  //         left: 24, // increase if needed
-  //       },
-  //     },
-  //     scales: {
-  //       x: {
-  //         grid: {
-  //           color: '#737373',
-  //           lineWidth: 1
-  //         },
-  //         ticks: {
-  //           color: '#C0C0C0'
-  //         },
-  //         beginAtZero: true,
-  //       },
-  //       y: {
-  //         // grid: {
-  //         //   color: '#C0C0C0',
-  //         //   lineWidth: 1
-  //         // },
-  //         ticks: {
-  //           color: '#C0C0C0'
-  //         },
-  //       }
-  //     },
-  //     }
-  // },[]);
+
 
     const lvlData = useMemo(() => {
       return {
-        labels: ['1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16','17','18','19','20','21','22','23','24','25'],
+        labels: ['0','1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16','17','18','19','20','21','22','23','24','25'],
         datasets: [
           {
             label: 'Площадь, м²',
@@ -806,17 +764,17 @@ function App() {
               '#3a7bbf',
               '#3a7bbf',
               '#3a7bbf',
-              '#0a2e6a',
-              '#0a2e6a',
-              '#0a2e6a',
-              '#0a2e6a',
-              '#0a2e6a',
-              '#0a2e6a',
-              '#0a2e6a',
-              '#0a2e6a',
-              '#0a2e6a',
-              '#0a2e6a',
-              '#0a2e6a',
+              '#003fa8',
+              '#003fa8',
+              '#003fa8',
+              '#003fa8',
+              '#003fa8',
+              '#003fa8',
+              '#003fa8',
+              '#003fa8',
+              '#003fa8',
+              '#003fa8',
+              '#003fa8',
             ],
             borderColor: '#ffffff', // Black borders
           },
@@ -939,9 +897,9 @@ function App() {
   useEffect(() => {
     if(selectedBlock) {
       if (
-        selectedBlock.properties.year_formed >= debouncedEpoque[1] || 
-        selectedBlock.properties.year_gone < debouncedEpoque[1] || 
-        selectedBlock.properties.year_formed <= debouncedEpoque[0]
+        selectedBlock.properties.year_formed > debouncedEpoque[1] || 
+        selectedBlock.properties.year_gone <= debouncedEpoque[1] || 
+        selectedBlock.properties.year_formed < debouncedEpoque[0]
       ) {
         setBlockFid(null)
       }
@@ -1073,9 +1031,14 @@ function App() {
             {!blockMode && <Layer {...buildingSelect}/>}
           </Source>
           <Source type="geojson" data={new_blocks}>
+            {!blockMode && <Layer {...blockLine}/>}
             {blockMode && <Layer {...blockLayer}/>}
             {blockMode && <Layer {...blockSelect}/>}
           </Source>
+          <NavigationControl style={{position: 'absolute', top: '40px', right: '10px'}}/>
+          <Button shape='circle' style={{position: 'absolute', bottom: '120px', right: '35px', width: '50px', height: '50px'}}>
+            <h2>3d</h2>
+          </Button>
           <Button 
             style={{position: 'absolute', bottom: '50px', right: '10px', height: '40px', width: '100px'}}
             onClick={toggleBlockMode} size='large' type={!blockMode ? 'default' : 'primary'}

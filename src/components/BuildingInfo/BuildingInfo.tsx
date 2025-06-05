@@ -70,9 +70,6 @@ export const BuildingInfo = ({selectedBuilding,setSelectedBuilding, blockMode, m
                 <h3>
                 {selectedBuilding.name ? selectedBuilding.name : selectedBuilding.type}
                 </h3>
-                {/* <div className={styles.imageDiv}>
-                <img className={styles.image} src='https://upload.wikimedia.org/wikipedia/commons/0/0a/%D0%91%D0%B0%D0%BD%D0%BD%D0%B0%D1%8F%2C_12%D0%90_2020.jpg'/>
-                </div> */}
                 {selectedBuilding.addr_house &&
                 <p>
                     Адрес: {selectedBuilding.addr_stree}{', дом '}{selectedBuilding.addr_house}

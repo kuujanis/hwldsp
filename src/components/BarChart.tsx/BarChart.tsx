@@ -49,7 +49,7 @@ export const BarList: React.FC<BarListProps> = ({ data }) => {
               {item.label}
             </div>
             <div style={{ fontSize: '14px'}}>
-              {(item.value/10000).toFixed(1)} га
+              {(item.value/10000).toFixed(2)} га
             </div>
           </div>
           <div

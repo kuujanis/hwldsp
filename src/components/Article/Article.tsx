@@ -105,12 +105,9 @@ export const Article = ({setEpoque, mapRef}:IArticle) => {
                 </div>
                 <div ref={zingerRef} className={styles.epoquediv}>
                     <h1 id='zinger'>Промышленный город</h1>
-                    <h2>1871-1922</h2>
                     <div className={styles.char}>
                         <div className={styles.stats}>
-                            <p>Население: 19 000</p>
-                            <p>Сохранившаяся застройка: 13 га</p>
-                            <p>Менее 3% современной</p>
+                            <b style={{fontSize: '3rem'}}>1871-1922</b>
                         </div>
                         <img className={styles.frontimg} src={getPublicImage('zinger.jpg')}/>
                     </div>

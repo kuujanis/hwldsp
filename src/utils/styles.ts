@@ -3,19 +3,26 @@ import { DataDrivenPropertyValueSpecification } from "maplibre-gl"
 
 type TStops = [number, string][]
 
-export const blockSelection: LayerProps = {
-  id: 'blockSelection',
-  type: 'fill-extrusion',
+
+
+export const blockLine: LayerProps = {
+  id: 'blockLine',
+  type: 'line',
   paint: {
-    'fill-extrusion-color': 'rgb(9, 0, 105)',
-    'fill-extrusion-height': [
-      'interpolate',
-      ['linear'],
-      ['zoom'],
-      9, 0,
-      10, ['*',['get', 'mean_lvl'],10]
-    ],
-    'fill-extrusion-opacity': 0.5
+    'line-color': 'silver'
+        // [
+        //   'match',
+        //   ['get','epoque'],
+        //   [1], '#e57316',
+        //   [2], '#e5a717',
+        //   [3], '#e6caa0',
+        //   [4], '#f3f3f3',
+        //   [5], '#a1e6db',
+        //   [6], '#17afe6',
+        //   [7], '#1616ff',
+        //   [8], '#ab17e6',
+        //   'rgba(0,0,0,0)'
+        // ],
   },
   
 }
@@ -60,7 +67,7 @@ export const buildinglvl:TStops = [
   [1, '#c6d9ec'],  
   [4, '#7fa8d6'],  
   [10, '#3a7bbf'], 
-  [17, '#0a2e6a'] 
+  [17, '#003fa8'] 
 ]
 
 export const blockUsage: DataDrivenPropertyValueSpecification<string> = [
