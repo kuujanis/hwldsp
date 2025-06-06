@@ -162,6 +162,18 @@ function App() {
     
   },[debouncedEpoque,buildings])
 
+  const flatSelect: LayerProps = useMemo(() => {
+    return {
+      id: 'flatSelect',
+      type: 'fill',
+      paint: {
+        'fill-color': 'white',
+        'fill-opacity': 0.2
+      },
+      filter: ['in','fid', blockFid ? blockFid : '']
+    }
+  },[blockFid])
+
   useEffect(() => {
     const filtered_blocks = blocks.features.filter((block) => 
       block.properties.year_formed <= debouncedEpoque[1] && 
@@ -1032,13 +1044,14 @@ function App() {
           </Source>
           <Source type="geojson" data={new_blocks}>
             {!blockMode && <Layer {...blockLine}/>}
+            {!blockMode && <Layer {...flatSelect}/>}
             {blockMode && <Layer {...blockLayer}/>}
             {blockMode && <Layer {...blockSelect}/>}
           </Source>
           <NavigationControl style={{position: 'absolute', top: '40px', right: '10px'}}/>
-          <Button shape='circle' style={{position: 'absolute', bottom: '120px', right: '35px', width: '50px', height: '50px'}}>
+          {/* <Button shape='circle' style={{position: 'absolute', bottom: '120px', right: '35px', width: '50px', height: '50px'}}>
             <h2>3d</h2>
-          </Button>
+          </Button> */}
           <Button 
             style={{position: 'absolute', bottom: '50px', right: '10px', height: '40px', width: '100px'}}
             onClick={toggleBlockMode} size='large' type={!blockMode ? 'default' : 'primary'}

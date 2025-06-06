@@ -24,8 +24,10 @@ export const blockLine: LayerProps = {
         //   'rgba(0,0,0,0)'
         // ],
   },
+  minzoom: 14
   
 }
+
 
 export const EPOQUES:TStops = [
   [1, 'gray'],
