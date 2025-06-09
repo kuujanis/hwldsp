@@ -1,5 +1,5 @@
 import { MapRef } from "@vis.gl/react-maplibre"
-import { AutoComplete, Input } from "antd"
+import { AutoComplete, Button, Input } from "antd"
 import rbush from "geojson-rbush"
 import { GeoJSONFeature } from "maplibre-gl"
 import { Dispatch, SetStateAction, useMemo, useState } from "react"
@@ -10,6 +10,17 @@ interface GeoJSON {
   crs: {type: string, properties: {[name: string]: string;}}
   features: GeoJSONFeature[],
   
+}
+
+const dict: {[name:string]: string} = {
+    detached_house: 'Одноквартирный дом', 
+    apartments: 'Многоквартирный дом', 
+    dormitory: 'Общежитие', 
+    mixed: 'Многофункциональное здание', 
+    commercial: 'Коммерческое здание', 
+    public: 'Общественное строение',
+    industrial: 'Производственное здание',
+    utility: 'Хозпостройка'
 }
 
 interface Info {
@@ -68,7 +79,10 @@ export const BuildingInfo = ({selectedBuilding,setSelectedBuilding, blockMode, m
                 <h2>Годы постройки: {selectedBuilding.aproxdate ?? selectedBuilding.year_built}</h2>
                 {Number(selectedBuilding.year_lost)<2030 ? <h2>Год сноса: {selectedBuilding.year_lost}</h2> : ''}
                 <h3>
-                {selectedBuilding.name ? selectedBuilding.name : selectedBuilding.type}
+                {selectedBuilding.name && selectedBuilding.name}
+                </h3>
+                <h3>
+                {dict[(selectedBuilding.building_2).toString()]}
                 </h3>
                 {selectedBuilding.addr_house &&
                 <p>
@@ -84,6 +98,7 @@ export const BuildingInfo = ({selectedBuilding,setSelectedBuilding, blockMode, m
                 {selectedBuilding.src && 
                 <p>Источник: {selectedBuilding.src}</p>
                 }
+                <Button onClick={() => setSelectedBuilding(null)}>Сброс</Button>
             </div>
         } else {
             return <div style={{marginTop: '30px', marginLeft: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
