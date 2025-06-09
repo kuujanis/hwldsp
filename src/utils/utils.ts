@@ -33,7 +33,7 @@ export const lvlStatDefault = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 export const enabledSettings = {
   scrollZoom: true,
   boxZoom: true,
-  dragRotate: true,
+  dragRotate: false,
   dragPan: true,
   keyboard: true,
   doubleClickZoom: true,

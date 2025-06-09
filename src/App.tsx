@@ -7,7 +7,7 @@ import { Button, ConfigProvider, InputNumber, Select, Slider, Switch } from 'ant
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title, TooltipItem, ChartData, ChartOptions } from "chart.js";
 import { Bar, Doughnut } from "react-chartjs-2";
 import { accumulateValues, extractObjects, indexOfMax, lvlStatDefault, enabledSettings, disabledSettings, simpsonsIndex, reverseSimpsonsIndex, useDebounce, booleanIntersection } from './utils/utils';
-import { blockLine, blockUsage, buildinglvl, buildingUsage, EPOQUES, FAR_STOPS, GSI_STOPS } from './utils/styles';
+import { blockLine, blockUsage, buildinglvl, buildingUsage, EPOQUES, FAR_STOPS, flatFill, GSI_STOPS } from './utils/styles';
 import { Article } from './components/Article/Article';
 import { BuildingInfo } from './components/BuildingInfo/BuildingInfo';
 import { Epoque } from './components/Epoque/Epoque';
@@ -18,8 +18,8 @@ import { BarList } from './components/BarChart.tsx/BarChart';
 import { LeftOutlined, RightOutlined } from '@ant-design/icons';
 
 
-const BLOCKS_URL = new URL('./assets/blocks_n.geojson', import.meta.url).href;
-const BUILDINGS_URL = new URL('./assets/building_result.geojson', import.meta.url).href;
+const BLOCKS_URL = new URL('./assets/blocks_buf.geojson', import.meta.url).href;
+const BUILDINGS_URL = new URL('./assets/building_n.geojson', import.meta.url).href;
 
 interface GeoJSON {
   type: "FeatureCollection",
@@ -96,7 +96,8 @@ function App() {
   const [lvlStat, setLvlStat] = useState<number[]>(lvlStatDefault)
   const [blockFid, setBlockFid] = useState<number|null>(null)
   const [selectedBlock, setSelectedBlock] = useState<GeoJSONFeature|null>(null)
-  // const [volume, setVolume] = useState<boolean>(false)
+  const [volume, setVolume] = useState<boolean>(false)
+  const [settings, setSettings] = useState<{[name: string]: boolean}>(disabledSettings)
 
   const [epoque, setEpoque] = useState<number[]>([1781,2025])
   const debouncedEpoque = useDebounce(epoque, 30)
@@ -166,9 +167,10 @@ function App() {
     return {
       id: 'flatSelect',
       type: 'fill',
+      'beforeId': 'flatBuildings',
       paint: {
         'fill-color': 'white',
-        'fill-opacity': 0.2
+        'fill-opacity': 0.15
       },
       filter: ['in','fid', blockFid ? blockFid : '']
     }
@@ -196,9 +198,20 @@ function App() {
 
   // map settings
 
-  const mapSettings = useMemo(() => {
-    return articleMode ? disabledSettings : enabledSettings
+  useEffect(() => {
+    setSettings(articleMode ? disabledSettings : enabledSettings)
   },[articleMode])
+
+  const toggle3D = useCallback(() => {
+    setSettings({...settings, dragRotate: !settings.dragRotate})
+    setVolume(!volume)
+    mapRef.current?.flyTo(!volume? {pitch: 60, duration: 2000}:{pitch: 0, bearing: 0, duration: 2000})
+  },[volume, settings])
+
+  const handleActivate = useCallback(() => {
+    toggleArticleMode()
+    setVolume(false)
+  },[])
 
   const blockLayer = useMemo(() => {
     const blockLayerStyle: LayerProps = {
@@ -261,11 +274,52 @@ function App() {
     }
     return blockLayerStyle
   },[mode, far])
+  const flatBlockLayer = useMemo(() => {
+    const blockLayerStyle: LayerProps = {
+      id: 'flatBlocks',
+      type: 'fill',
+      'beforeId': 'flatBlockSelection'
+    }
+    if (mode==='density') {
+      blockLayerStyle.paint = {
+        'fill-color': {
+          property: far ? 'far' : 'gsi',
+          type: 'interval',
+          stops: far ? FAR_STOPS : GSI_STOPS
+        },
+        'fill-opacity': 0.75
+      }
+    }
+    if (mode==='year') {
+      blockLayerStyle.paint = {
+        'fill-color': [
+          'match',
+          ['get','epoque'],
+          [1], '#e57316',
+          [2], '#e5a717',
+          [3], '#e6caa0',
+          [4], '#f3f3f3',
+          [5], '#a1e6db',
+          [6], '#17afe6',
+          [7], '#1616ff',
+          [8], '#ab17e6',
+          '#101010'
+        ]
+      }
+    }
+    if (mode==='usage') {
+      blockLayerStyle.paint = {
+        'fill-color': blockUsage,
+      }
+    }
+    return blockLayerStyle
+  },[mode, far])
 
   const buildingLayer = useMemo(() => {
     const buildingLayerStyle: LayerProps = {
       id: 'buildings',
-      type: 'fill-extrusion'
+      type: 'fill-extrusion',
+      'beforeId': 'buildingSelection'
     }
     if (mode==='year') {
       buildingLayerStyle.paint = {
@@ -314,18 +368,54 @@ function App() {
     }
     return buildingLayerStyle
   },[mode])
+  const flatBuildingLayer = useMemo(() => {
+      const buildingLayerStyle: LayerProps = {
+        id: 'flatBuildings',
+        type: 'fill',
+        'beforeId': 'flatBuildingSelection'
+      }
+      if (mode==='year') {
+        buildingLayerStyle.paint = {
+          'fill-color': {
+            property: 'year_built',
+            type: 'interval',
+            stops: EPOQUES
+          },
+        }
+      }
+      if (mode==='usage') {
+        buildingLayerStyle.paint = {
+          'fill-color': buildingUsage,
+        }
+      } 
+      if (mode==='density') {
+        buildingLayerStyle.paint = {
+          'fill-color': {
+            property: 'lvl',
+            type: 'interval',
+            stops: buildinglvl
+          },
+          'fill-opacity': 1
+        }
+      }
+      return buildingLayerStyle
+  },[mode])
 
   const onClick = useCallback((e:MapLayerMouseEvent) => {
     if (e.features && e.features.length > 0) {
-      if (e.features[0].layer.id === 'blocks') {
-        setBlockStat({...e.features[0].properties})
-        setBlockFid(e.features[0].properties.fid)
-        setSelectedBlock(e.features[0])
-      }
-      if (e.features[0].layer.id === 'buildings') {
-        console.log(e.features[0].properties)
-        setSelectedBuilding({...e.features[0].properties})
-      }
+      console.log(e.features)
+      e.features.map((feature) => {
+        if (feature.layer.id === 'buildings' || feature.layer.id === 'flatBuildings') {
+          console.log(feature.properties)
+          setSelectedBuilding({...feature.properties})
+        }
+        if (feature.layer.id === 'blocks'|| feature.layer.id === 'flatBlocks' || feature.layer.id === 'flatFill' ) {
+          console.log('block')
+          setBlockStat({...feature.properties})
+          setBlockFid(feature.properties.fid)
+          setSelectedBlock(feature)
+        }
+      })
     }     
     else {
       //drop features
@@ -353,6 +443,17 @@ function App() {
       filter: ['in','fid', blockFid ? blockFid : '']
     }
   },[blockFid])
+  const flatBlockSelect: LayerProps = useMemo(() => {
+    return {
+      id: 'flatBlockSelection',
+      type: 'fill',
+      paint: {
+        'fill-color': 'rgb(4, 0, 46)',
+        'fill-opacity': 0.5
+      },
+      filter: ['in','fid', blockFid ? blockFid : '']
+    }
+  },[blockFid])
 
   const buildingSelect: LayerProps =useMemo(() => {
     return {
@@ -368,6 +469,17 @@ function App() {
               10, ['*',['get', 'lvl'],5]
           ],
           'fill-extrusion-opacity': 0.5
+      },
+      filter: ['in','full_id', selectedBuilding ? selectedBuilding.full_id :'']
+    }
+  },[selectedBuilding])
+  const flatBuildingSelect: LayerProps =useMemo(() => {
+    return {
+      id: 'flatBuildingSelection',
+      type: 'fill',
+      paint: {
+          'fill-color': 'black',
+          'fill-opacity': 0.5
       },
       filter: ['in','full_id', selectedBuilding ? selectedBuilding.full_id :'']
     }
@@ -750,8 +862,7 @@ function App() {
     }
   },[]);
 
-
-    const lvlData = useMemo(() => {
+  const lvlData = useMemo(() => {
       return {
         labels: ['0','1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16','17','18','19','20','21','22','23','24','25'],
         datasets: [
@@ -967,8 +1078,11 @@ function App() {
             </div>
 
   {/* Right column - Primary and secondary values */}
-            <div style={{ marginLeft: '16px', marginTop: '40px'}}>
-              <div style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '4px' }}>
+            <div style={{ marginLeft: '16px', marginTop: '22px'}}>
+              <div style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '4px', marginTop: '6px' }}>
+                {blockFid ? <span>Квартал №{blockFid}</span> : <span>Все кварталы</span>}
+              </div>
+              <div style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '4px', marginTop: '10px' }}>
                 {blockStat && (Number(blockStat.sum)*0.0001).toFixed(1)} га       
               </div>
               <div style={{ fontSize: '14px' }}>
@@ -1009,11 +1123,11 @@ function App() {
           }}
           style={{maxWidth: '100%', minWidth: '50%', height: '100%', transition: 'width 0.5s ease'}}
           mapStyle="https://api.maptiler.com/maps/f40a1280-834e-43de-b7ea-919faa734af4/style.json?key=5UXjcwcX8UyLW6zNAxsl"
-          interactiveLayerIds={['buildings','blocks']}
+          interactiveLayerIds={['buildings','flatBuildings','blocks','flatBlocks','flatFill']}
           onClick={onClick}
           attributionControl={false}
           maxPitch={85}
-          {...mapSettings}
+          {...settings}
         >
           <div  className='legendTab'>
             <div className='epoqueTab'>
@@ -1039,19 +1153,26 @@ function App() {
             </div>
           </div>
           <Source type="geojson" data={filteredBuildings}>
-            {!blockMode && <Layer {...buildingLayer}/>}
-            {!blockMode && <Layer {...buildingSelect}/>}
+            {!blockMode && volume && <Layer {...buildingLayer}/>}
+            {!blockMode && !volume && <Layer {...flatBuildingLayer}/>}
+            {!blockMode && volume && <Layer {...buildingSelect}/>}
+            {!blockMode && !volume && <Layer {...flatBuildingSelect}/>}
           </Source>
           <Source type="geojson" data={new_blocks}>
-            {!blockMode && <Layer {...blockLine}/>}
             {!blockMode && <Layer {...flatSelect}/>}
-            {blockMode && <Layer {...blockLayer}/>}
-            {blockMode && <Layer {...blockSelect}/>}
+            {!blockMode && <Layer {...blockLine}/>}
+            {!blockMode && <Layer {...flatFill}/>}
+            {!volume && blockMode && <Layer {...flatBlockLayer}/>}
+            {volume && blockMode && <Layer {...blockLayer}/>}
+            {blockMode && volume && <Layer {...blockSelect}/>}
+            {blockMode && !volume && <Layer {...flatBlockSelect}/>}
           </Source>
           <NavigationControl style={{position: 'absolute', top: '40px', right: '10px'}}/>
-          {/* <Button shape='circle' style={{position: 'absolute', bottom: '120px', right: '35px', width: '50px', height: '50px'}}>
-            <h2>3d</h2>
-          </Button> */}
+          {!articleMode && <Button shape='circle' onClick={toggle3D}
+            style={{position: 'absolute', bottom: '120px', right: '35px', width: '50px', height: '50px'}}
+          >
+            {volume ? <h2>3d</h2> : <h2>2d</h2>}
+          </Button>}
           <Button 
             style={{position: 'absolute', bottom: '50px', right: '10px', height: '40px', width: '100px'}}
             onClick={toggleBlockMode} size='large' type={!blockMode ? 'default' : 'primary'}
@@ -1089,7 +1210,7 @@ function App() {
             display: 'flex', flexDirection: 'row', justifyContent: 'center',
             alignItems: 'center'
           }}>
-            <Button onClick={toggleArticleMode}>
+            <Button onClick={handleActivate}>
               {articleMode ? <span>Активировать карту</span> : <span>Назад к статье</span>}
             </Button>
           </div>

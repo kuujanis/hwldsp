@@ -71,12 +71,9 @@ export const Article = ({setEpoque, mapRef}:IArticle) => {
                 </div>
                 <div ref={merchantRef} className={styles.epoquediv}>
                     <h1 id='merchant'>Купеческий город</h1>
-                    <h2>1781-1871</h2>
                     <div className={styles.char}>
                         <div className={styles.stats}>
-                            <p>Население: 4000</p>
-                            <p>Сохранившаяся застройка: 2 га</p>
-                            <p>Менее 1% современной</p>
+                            <b style={{fontSize: '3rem'}}>1781-1870</b>
                         </div>
                         <img className={styles.frontimg} src={getPublicImage('merchant.jpg')}/>
                     </div>
@@ -107,7 +104,7 @@ export const Article = ({setEpoque, mapRef}:IArticle) => {
                     <h1 id='zinger'>Промышленный город</h1>
                     <div className={styles.char}>
                         <div className={styles.stats}>
-                            <b style={{fontSize: '3rem'}}>1871-1922</b>
+                            <b style={{fontSize: '3rem'}}>1871-1921</b>
                         </div>
                         <img className={styles.frontimg} src={getPublicImage('zinger.jpg')}/>
                     </div>
@@ -141,12 +138,9 @@ export const Article = ({setEpoque, mapRef}:IArticle) => {
                 </div>
                 <div ref={leninRef} className={styles.epoquediv}>
                     <h1 id='lenin'>Революционный город</h1>
-                    <h2>1923-1940</h2>
                     <div className={styles.char}>
                         <div className={styles.stats}>
-                            <p>Население: 72 000</p>
-                            <p>Сохранившаяся застройка: 22 га</p>
-                            <p>Менее 5,5% современной</p>
+                            <b style={{fontSize: '3rem'}}>1922-1940</b>
                         </div>
                         <img className={styles.frontimg} src={getPublicImage('construct.jpg')}/>
                     </div>
@@ -178,12 +172,9 @@ export const Article = ({setEpoque, mapRef}:IArticle) => {
                 </div>
                 <div ref={stalinRef} className={styles.epoquediv}>
                     <h1 id='stalin'>Послевоенный город</h1>
-                    <h2>1941-1958</h2>
                     <div className={styles.char}>
                         <div className={styles.stats}>
-                            <p>Население: 129 000</p>
-                            <p>Сохранившаяся застройка: 28 га</p>
-                            <p>Менее 7% современной</p>
+                            <b style={{fontSize: '3rem'}}>1941-1959</b>
                         </div>
                         <img className={styles.frontimg} src={getPublicImage('stalin.png')}/>
                     </div>
@@ -206,12 +197,9 @@ export const Article = ({setEpoque, mapRef}:IArticle) => {
                 </div>
                 <div ref={hrushevRef} className={styles.epoquediv}>
                     <h1 id='hrushev'>Город трудовой доблести</h1>
-                    <h2>1959-1974</h2>
                     <div className={styles.char}>
                         <div className={styles.stats}>
-                            <p>Население: 194 000</p>
-                            <p>Сохранившаяся застройка: 110 га</p>
-                            <p>Менее 27% современной</p>
+                            <b style={{fontSize: '3rem'}}>1960-1974</b>
                         </div>
                         <img className={styles.frontimg} src={getPublicImage('hrushev.png')}/>
                     </div>
@@ -236,13 +224,10 @@ export const Article = ({setEpoque, mapRef}:IArticle) => {
                     <h3>Районы: Высотный, Ивановский, Юбилейный, Кутузово, Южный, Климовск, Межшоссейный Центральный</h3>
                 </div>
                 <div ref={stagnationRef} className={styles.epoquediv}>
-                    <h1 id='stagnation'>Индустриальный город</h1>
-                    <h2>1975-1991</h2>
+                    <h1 id='stagnation'>Перестройка</h1>
                     <div className={styles.char}>
                         <div className={styles.stats}>
-                            <p>Население: 209 000</p>
-                            <p>Сохранившаяся застройка: 51 га</p>
-                            <p>Менее 13% современной</p>
+                            <b style={{fontSize: '3rem'}}>1975-1991</b>
                         </div>
                         <img className={styles.frontimg} src={getPublicImage('stagnation.png')}/>
                     </div>
@@ -266,12 +251,9 @@ export const Article = ({setEpoque, mapRef}:IArticle) => {
                 </div>
                 <div ref={zeroesRef} className={styles.epoquediv}>
                     <h1 id='zeroes'>Постиндустриальный город</h1>
-                    <h2>1992-2007</h2>
                     <div className={styles.char}>
                         <div className={styles.stats}>
-                            <p>Население: 180 000</p>
-                            <p>Сохранившаяся застройка: 56 га</p>
-                            <p>Менее 14% современной</p>
+                            <b style={{fontSize: '3rem'}}>1992-2007</b>
                         </div>
                         <img className={styles.frontimg} src={getPublicImage('zeroes.png')}/>
                     </div>
@@ -293,12 +275,9 @@ export const Article = ({setEpoque, mapRef}:IArticle) => {
                 </div>
                 <div ref={todayRef} className={styles.epoquediv}>
                     <h1 id='today'>Постмодернистский город</h1>
-                    <h2>2008-2024</h2>
                     <div className={styles.char}>
                         <div className={styles.stats}>
-                            <p>Население: 223 000</p>
-                            <p>Сохранившаяся застройка: 122 га</p>
-                            <p>Около 30% современной</p>
+                            <b style={{fontSize: '3rem'}}>2008-2025</b>
                         </div>
                         <img className={styles.frontimg} src={getPublicImage('/postmodern.png')}/>
                     </div>

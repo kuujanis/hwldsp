@@ -3,7 +3,16 @@ import { DataDrivenPropertyValueSpecification } from "maplibre-gl"
 
 type TStops = [number, string][]
 
-
+export const flatFill: LayerProps = {
+  id: 'flatFill',
+  type: 'fill',
+  'beforeId':'blockLine',
+  paint: {
+    'fill-color': 'pink',
+    'fill-opacity': 0.01
+  },
+  minzoom: 14
+}
 
 export const blockLine: LayerProps = {
   id: 'blockLine',
