@@ -82,7 +82,7 @@ export const BuildingInfo = ({selectedBuilding,setSelectedBuilding, blockMode, m
                 {selectedBuilding.name && selectedBuilding.name}
                 </h3>
                 <h3>
-                {dict[(selectedBuilding.building_2).toString()]}
+                {selectedBuilding.building_2 ? dict[(selectedBuilding.building_2).toString()] : 'Строение'}
                 </h3>
                 {selectedBuilding.addr_house &&
                 <p>
