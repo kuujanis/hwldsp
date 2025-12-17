@@ -85,21 +85,21 @@ export const blockUsage: DataDrivenPropertyValueSpecification<string> = [
   'match',
   ['get', 'usage'],
   [1],
-  'rgb(184, 255, 104)',
+  '#b8ff68ff',
   [2],
-  'rgb(252, 195, 50)',
+  '#fcc332ff',
   [3],
-  'rgb(255, 197, 135)',
+  '#ffc587ff',
   [4],
-  'rgb(254, 127, 0)',
+  '#fe7f00ff',
   [5],
-  'rgb(255, 44, 44)',
+  '#ff2c2cff',
   [6],
-  'rgb(64, 210, 255)',
+  '#40d2ffff',
   [7],
-  'rgb(54, 43, 123)',
+  '#362b7bff',
   [8],
-  'rgb(32, 134, 117)',
+  '#208675ff',
   '#101010'
 ]
 
@@ -111,6 +111,16 @@ export const GSI_STOPS:TStops = [
   [0.15, 'rgb(45, 135, 0)'],
   [0.25, 'rgb(54, 162, 0)'],
   [0.3, 'rgb(108, 225, 0)'],
+]
+
+export const MXI_STOPS:TStops = [
+  [0, 'rgba(27, 9, 0, 1)'],
+  [0.02, 'rgba(47, 19, 0, 1)'],
+  [0.15, 'rgba(75, 30, 0, 1)'],
+  [0.3, 'rgba(110, 48, 0, 1)'],
+  [0.45, 'rgba(168, 65, 0, 1)'],
+  [0.6, 'rgba(205, 78, 0, 1)'],
+  [0.75, 'rgba(255, 94, 0, 1)'],
 ]
 
 export const FAR_STOPS:TStops = [
@@ -138,3 +148,9 @@ export const buildingSelection: LayerProps = {
       'fill-extrusion-opacity': 0.5
     }
 }
+
+export const COLOR_MATRIX = [
+  ['rgba(0, 204, 255, 1)', "rgba(0, 255, 166, 1)","rgba(60, 255, 0, 1)"],
+  ["rgba(0, 127, 177, 1)","rgba(51, 152, 0, 1)", "rgba(234, 255, 0, 1)"],
+  ["rgba(51, 141, 84, 1)","rgba(161, 169, 0, 1)","rgba(255, 200, 0, 1)"]
+]

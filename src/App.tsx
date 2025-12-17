@@ -7,7 +7,7 @@ import { Button, ConfigProvider, InputNumber, Select, Slider, Switch } from 'ant
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title, TooltipItem, ChartData, ChartOptions } from "chart.js";
 import { Bar, Doughnut } from "react-chartjs-2";
 import { accumulateValues, extractObjects, indexOfMax, lvlStatDefault, enabledSettings, disabledSettings, simpsonsIndex, reverseSimpsonsIndex, useDebounce, booleanIntersection } from './utils/utils';
-import { blockLine, blockUsage, buildinglvl, buildingUsage, EPOQUES, FAR_STOPS, flatFill, GSI_STOPS } from './utils/styles';
+import { blockLine, blockUsage, buildinglvl, buildingUsage, EPOQUES, FAR_STOPS, flatFill, GSI_STOPS, MXI_STOPS } from './utils/styles';
 import { Article } from './components/Article/Article';
 import { BuildingInfo } from './components/BuildingInfo/BuildingInfo';
 import { Epoque } from './components/Epoque/Epoque';
@@ -15,7 +15,11 @@ import rbush from 'geojson-rbush';
 import { Feature, FeatureCollection, GeoJsonProperties, Geometry } from 'geojson';
 import { Scale } from './components/Scales/Scale';
 import { BarList } from './components/BarChart.tsx/BarChart';
-import { LeftOutlined, RightOutlined } from '@ant-design/icons';
+import { DownloadOutlined, LeftOutlined, RightOutlined } from '@ant-design/icons';
+import { SpaceMatrix } from './components/Matrix/SpaceMatrix';
+import { DevMatrix } from './components/Matrix/DevMatrix';
+import { MScale } from './components/Scales/MScale';
+
 
 
 const BLOCKS_URL = new URL('./assets/blocks_buf.geojson', import.meta.url).href;
@@ -81,17 +85,23 @@ const modeOptions = [
   {value: 'year', label: <span>Период застройки</span>},
   {value: 'usage', label: <span>Тип застройки</span>},
   {value: 'density', label: <span>Плотность застройки</span>},
+  {value: 'matrix', label: <span>Матрица пространства</span>},
+  {value: 'development', label:<span>Матрица развития</span>}
 ]
+
+// const json: {[name:string]:number}[]|null = []
 
 function App() {
   const [buildings, setBuildings] = useState<GeoJSON>(emptyGeoJSON)
   const [blocks, setBlocks] = useState<GeoJSON>(emptyGeoJSON)
   const [filteredBuildings, setFilteredBuildings] = useState<GeoJSON>(emptyGeoJSON)
+  const [prevBuildings, setPrevBuildings] = useState<GeoJSON>(emptyGeoJSON)
   const [filteredBlocks, setFilteredBlocks] = useState<GeoJSON>(emptyGeoJSON)
   const [new_blocks, setNewBlocks] = useState<GeoJSON>(emptyGeoJSON)
   // const [year, setYear] = useState<number>(2025)
   const [mode, setMode] = useState<string>('usage')
-  const [far, setFar] = useState<boolean>(false)
+  const [mxi, setMxi] = useState<boolean>(false)
+  const [far, setFar] = useState<boolean>(true)
   const [blockStat, setBlockStat] = useState<{[name: string]: number}|null>(null)
   const [lvlStat, setLvlStat] = useState<number[]>(lvlStatDefault)
   const [blockFid, setBlockFid] = useState<number|null>(null)
@@ -101,6 +111,19 @@ function App() {
 
   const [epoque, setEpoque] = useState<number[]>([1781,2025])
   const debouncedEpoque = useDebounce(epoque, 30)
+  const [threshold, setThreshold] = useState<number>(1)
+
+  const [matrixCount, setMatrixCount] = useState<{[name:number]:number}>({
+    0: 0, 1: 0, 2: 0,
+    3: 0, 4: 0, 5: 0,
+    6: 0, 7: 0, 8: 0
+  })
+
+  const [devMatrixCount, setDevMatrixCount] = useState<{[name:number]:number}>({
+    0: 0, 1: 0, 2: 0,
+    3: 0, 4: 0, 5: 0,
+    6: 0, 7: 0, 8: 0
+  })
 
   const [blockMode, toggleBlockMode] = useReducer((prevState) => !prevState, false)
   const [articleMode, toggleArticleMode] = useReducer((prevState) => !prevState, true)
@@ -141,14 +164,53 @@ function App() {
     fetchBuildings()
   },[])
 
+  // useEffect(() => {
+  //   if (json && blockStat) {
+  //     json.push(blockStat)
+  //   }
+  // },[blockStat])
+
+  const downloadClick = useCallback(() => {
+      const jsonString = JSON.stringify(new_blocks, null, 2);
+      const blob = new Blob([jsonString], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob); 
+
+      const a = document.createElement('a'); // Create an anchor element
+      a.href = url; // Set the href to the Blob URL
+      a.download = `output_n.geojson`; // Set the download attribute to the desired filename
+      document.body.appendChild(a); // Append the anchor to the body (can be removed later)
+      a.click(); // Programmatically click the anchor to trigger download
+      document.body.removeChild(a); // Clean up the anchor element
+      URL.revokeObjectURL(url);
+  },[new_blocks])
+
   // building filtration
 
   useEffect(() => {
+    const filterStart = performance.now()
     const filtered_buildings = buildings.features.filter((building) => 
       building.properties.year_built <= debouncedEpoque[1] && 
       building.properties.year_lost > debouncedEpoque[1] &&
       building.properties.year_built >= debouncedEpoque[0]
     )
+    const filterEnd = performance.now() - filterStart
+    console.log(`Took ${filterEnd.toFixed(2)}ms to filter`)
+    const prev_buildings = buildings.features.filter((building) => 
+      building.properties.year_built <= debouncedEpoque[1]-threshold && 
+      building.properties.year_lost > debouncedEpoque[1]-threshold &&
+      building.properties.year_built >= debouncedEpoque[0]
+    )
+    setPrevBuildings({
+      type: 'FeatureCollection', 
+      name: 'prev_buildings', 
+      crs: { 
+        "type": "name", 
+        "properties": {
+         "name": "urn:ogc:def:crs:OGC:1.3:CRS84" 
+        }
+      }, 
+      features: prev_buildings
+    })
     setFilteredBuildings({
       type: 'FeatureCollection', 
       name: 'buildings', 
@@ -161,7 +223,7 @@ function App() {
       features: filtered_buildings
     })
     
-  },[debouncedEpoque,buildings])
+  },[debouncedEpoque,buildings, threshold])
 
   const flatSelect: LayerProps = useMemo(() => {
     return {
@@ -179,7 +241,7 @@ function App() {
   useEffect(() => {
     const filtered_blocks = blocks.features.filter((block) => 
       block.properties.year_formed <= debouncedEpoque[1] && 
-      block.properties.year_gone > debouncedEpoque[1] &&
+      block.properties.year_gone >= debouncedEpoque[1] &&
       block.properties.year_formed >= debouncedEpoque[0]
     )
     console.log(filtered_blocks.length)
@@ -219,6 +281,43 @@ function App() {
       type: 'fill-extrusion',
       'beforeId': 'blockSelection'
     }
+    if (mode==='matrix') {
+      blockLayerStyle.paint = {
+        'fill-extrusion-color': !far ? [
+          "case",
+          ['all',["<", ["get", "gsi"], 0.15], ["<=",["get","mean_lvl"],3]], "#004c02ff", 
+          ['all',["<", ["get", "gsi"], 0.15], [">",["get","mean_lvl"],3], ["<=",["get","mean_lvl"],9]], "#009a6cff", 
+          ['all',["<", ["get", "gsi"], 0.15], [">",["get","mean_lvl"],9]], '#00ffffff',  
+          ['all',[">", ["get", "gsi"], 0.15], ["<", ["get", "gsi"], 0.3], ["<=",["get","mean_lvl"],3]], "#8da000ff",
+          ['all',[">", ["get", "gsi"], 0.15], ["<", ["get", "gsi"], 0.3], [">",["get","mean_lvl"],3], ["<=",["get","mean_lvl"],9]], "#3bb001ff",
+          ['all',[">", ["get", "gsi"], 0.15], ["<", ["get", "gsi"], 0.3], [">",["get","mean_lvl"],9]], "#00ffaeff", 
+          ['all',[">", ["get", "gsi"], 0.3], ["<=",["get","mean_lvl"],3]], "#ffb700ff", 
+          ['all',[">", ["get", "gsi"], 0.3], [">",["get","mean_lvl"],3], ["<=",["get","mean_lvl"],9]], "#b5de00ff", 
+          ['all',[">", ["get", "gsi"], 0.3], [">",["get","mean_lvl"],9]], "#1eff00ff", 
+          "grey" 
+        ] : [
+          "case",
+          ['all',["<", ["get", "far"], 0.5], ["<=",["get","mxi"],0.1]], "#200082ff", 
+          ['all',["<", ["get", "far"], 0.5], [">",["get","mxi"],0.1], ["<=",["get","mxi"],0.4]], "#a92395ff", 
+          ['all',["<", ["get", "far"], 0.5], [">",["get","mxi"],0.4]], '#ff6a00ff',  
+          ['all',[">", ["get", "far"], 0.5], ["<", ["get", "far"], 1], ["<=",["get","mxi"],0.1]], "#7e03a8ff",
+          ['all',[">", ["get", "far"], 0.5], ["<", ["get", "far"], 1], [">",["get","mxi"],0.1], ["<=",["get","mxi"],0.4]], "#cc4678ff",
+          ['all',[">", ["get", "far"], 0.5], ["<", ["get", "far"], 1], [">",["get","mxi"],0.4]], "#ffa200ff", 
+          ['all',[">", ["get", "far"], 1], ["<=",["get","mxi"],0.1]], "#8e00c6ff", 
+          ['all',[">", ["get", "far"], 1], [">",["get","mxi"],0.1], ["<=",["get","mxi"],0.4]], "#e56b5dff", 
+          ['all',[">", ["get", "far"], 1], [">",["get","mxi"],0.4]], "#ffea00ff", 
+          "grey" 
+        ],
+        'fill-extrusion-height': [
+          'interpolate',
+          ['linear'],
+          ['zoom'],
+          9, 0,
+          10, ['*',['get', 'mean_lvl'],10]
+        ],
+        'fill-extrusion-opacity': 0.9
+      }
+    }
     if (mode==='density') {
       blockLayerStyle.paint = {
         'fill-extrusion-color': {
@@ -233,7 +332,7 @@ function App() {
           9, 0,
           10, ['*',['get', 'mean_lvl'],10]
         ],
-        'fill-extrusion-opacity': 0.75
+        'fill-extrusion-opacity': 0.9
       }
     }
     if (mode==='year') {
@@ -260,25 +359,69 @@ function App() {
         ],
       }
     }
+    if (mode ==='development') {
+      blockLayerStyle.paint = {  
+          'fill-extrusion-color': [
+            "case",
+            ['all',["<", ["get", "far_d"], 0], ["<",["get","mxi_d"],0]], "#ff0000ff",
+            ['all',["<", ["get", "far_d"], 0], ["==",["get","mxi_d"],0]], "#c800ffff", 
+            ['all',["<", ["get", "far_d"], 0], [">",["get","mxi_d"],0]], "#1500ffff",
+            ['all',["==", ["get", "far_d"], 0], ["<",["get","mxi_d"],0]], "#ff7300ff",
+            ['all',["==", ["get", "far_d"], 0], ["==",["get","mxi_d"],0]], "#77614bff",
+            ['all',["==", ["get", "far_d"], 0], [">",["get","mxi_d"],0]], "#00ffaeff", 
+            ['all',[">", ["get", "far_d"], 0], ["<",["get","mxi_d"],0]], "#ffb700ff",
+            ['all',[">", ["get", "far_d"], 0], ["==",["get","mxi_d"],0]], "#e1ff00ff",
+            ['all',[">", ["get", "far_d"], 0], [">",["get","mxi_d"],0]], "#59ff00ff", 
+            "grey" 
+          ],
+          'fill-extrusion-height': [
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+            9, 0,
+            10, ['*',['get', 'mean_lvl'],10]
+          ],
+          'fill-extrusion-opacity': 0.75
+        } 
+    }
     if (mode==='usage') {
+      if (mxi) {
+        blockLayerStyle.paint = {
+          'fill-extrusion-color': {
+            property: 'mxi',
+            type: 'interval',
+            stops: MXI_STOPS
+          },
+          'fill-extrusion-height': [
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+            9, 0,
+            10, ['*',['get', 'mean_lvl'],10]
+        ],
+        'fill-extrusion-opacity': 0.75
+      }
+    } else {
       blockLayerStyle.paint = {
-        'fill-extrusion-color': blockUsage,
-        'fill-extrusion-height': [
-          'interpolate',
-          ['linear'],
-          ['zoom'],
-          9, 0,
-          10, ['*',['get', 'mean_lvl'],10]
-      ]
+          'fill-extrusion-color': blockUsage,
+          'fill-extrusion-height': [
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+            9, 0,
+            10, ['*',['get', 'mean_lvl'],10]
+        ],
+        'fill-extrusion-opacity': 0.75
       }
     }
-    return blockLayerStyle
-  },[mode, far])
+  }
+  return blockLayerStyle
+  },[mode, far, mxi])
   const flatBlockLayer = useMemo(() => {
     const blockLayerStyle: LayerProps = {
       id: 'flatBlocks',
       type: 'fill',
-      'beforeId': 'flatBlockSelection'
+      // 'beforeId': 'road_labels'
     }
     if (mode==='density') {
       blockLayerStyle.paint = {
@@ -290,6 +433,41 @@ function App() {
         'fill-opacity': 0.75
       }
     }
+    if (mode==='matrix') {
+      blockLayerStyle.paint = {
+        'fill-color': [
+          "case",
+          ['all',["<", ["get", "gsi"], 0.15], ["<=",["get","mean_lvl"],3]], "#004c02ff", 
+          ['all',["<", ["get", "gsi"], 0.15], [">",["get","mean_lvl"],3], ["<=",["get","mean_lvl"],9]], "#009a6cff", 
+          ['all',["<", ["get", "gsi"], 0.15], [">",["get","mean_lvl"],9]], '#00ffffff',  
+          ['all',[">", ["get", "gsi"], 0.15], ["<", ["get", "gsi"], 0.3], ["<=",["get","mean_lvl"],3]], "#8da000ff",
+          ['all',[">", ["get", "gsi"], 0.15], ["<", ["get", "gsi"], 0.3], [">",["get","mean_lvl"],3], ["<=",["get","mean_lvl"],9]], "#3bb001ff",
+          ['all',[">", ["get", "gsi"], 0.15], ["<", ["get", "gsi"], 0.3], [">",["get","mean_lvl"],9]], "#00ffaeff", 
+          ['all',[">", ["get", "gsi"], 0.3], ["<=",["get","mean_lvl"],3]], "#ffb700ff", 
+          ['all',[">", ["get", "gsi"], 0.3], [">",["get","mean_lvl"],3], ["<=",["get","mean_lvl"],9]], "#b5de00ff", 
+          ['all',[">", ["get", "gsi"], 0.3], [">",["get","mean_lvl"],9]], "#1eff00ff", 
+          "grey" 
+        ],
+      }
+    }
+    if (mode==='development') {
+        console.log('d')
+        blockLayerStyle.paint = {  
+          'fill-color': [
+            "case",
+            ['all',["<", ["get", "far_d"], 0], ["<",["get","mxi_d"],0]], "#ff0000ff",
+            ['all',["<", ["get", "far_d"], 0], ["==",["get","mxi_d"],0]], "#c800ffff", 
+            ['all',["<", ["get", "far_d"], 0], [">",["get","mxi_d"],0]], "#1500ffff",
+            ['all',["==", ["get", "far_d"], 0], ["<",["get","mxi_d"],0]], "#ff7300ff",
+            ['all',["==", ["get", "far_d"], 0], ["==",["get","mxi_d"],0]], "#77614bff",
+            ['all',["==", ["get", "far_d"], 0], [">",["get","mxi_d"],0]], "#00ffaeff", 
+            ['all',[">", ["get", "far_d"], 0], ["<",["get","mxi_d"],0]], "#ffb700ff",
+            ['all',[">", ["get", "far_d"], 0], ["==",["get","mxi_d"],0]], "#e1ff00ff",
+            ['all',[">", ["get", "far_d"], 0], [">",["get","mxi_d"],0]], "#59ff00ff", 
+            "grey" 
+          ],
+        }
+    } 
     if (mode==='year') {
       blockLayerStyle.paint = {
         'fill-color': [
@@ -308,12 +486,22 @@ function App() {
       }
     }
     if (mode==='usage') {
+      if (mxi) {
+        blockLayerStyle.paint = {
+          'fill-color': {
+            property: 'mxi',
+            type: 'interval',
+            stops: MXI_STOPS
+          },
+      }
+    } else {
       blockLayerStyle.paint = {
         'fill-color': blockUsage,
       }
     }
+  }
     return blockLayerStyle
-  },[mode, far])
+  },[mode, far,mxi])
 
   const buildingLayer = useMemo(() => {
     const buildingLayerStyle: LayerProps = {
@@ -349,7 +537,7 @@ function App() {
         ]
       }
     } 
-    if (mode==='density') {
+    if (mode==='density'||mode==='matrix') {
       buildingLayerStyle.paint = {
         'fill-extrusion-color': {
           property: 'lvl',
@@ -383,12 +571,13 @@ function App() {
           },
         }
       }
-      if (mode==='usage') {
+      if (mode==='usage'||mode==='development') {
         buildingLayerStyle.paint = {
           'fill-color': buildingUsage,
         }
-      } 
-      if (mode==='density') {
+      }
+      
+      if (mode==='density'||mode==='matrix') {
         buildingLayerStyle.paint = {
           'fill-color': {
             property: 'lvl',
@@ -424,6 +613,11 @@ function App() {
       setSelectedBlock(null)
     }
   },[])
+  const onIndexClick = useCallback(() => {
+    if (mode==='usage') {
+      setMxi(!mxi)
+    }
+  }, [mode, mxi])
 
   const blockSelect: LayerProps = useMemo(() => {
     return {
@@ -490,11 +684,20 @@ function App() {
   useEffect(() => {
     const startTime = performance.now()
     const label = mode
+    const prevtree = rbush()
     const tree = rbush()
+    const treeStart = performance.now()
     tree.load({ type: 'FeatureCollection', features: filteredBuildings.features });
+    const treeEnd = performance.now() - treeStart
+    console.log(`Took ${treeEnd.toFixed(2)}ms to tree search`)
+    prevtree.load({ type: 'FeatureCollection', features: prevBuildings.features })
     const upd_features = filteredBlocks?.features.map((block) => {
-      let acc_lvl = 0
-      let j = 0
+      block.properties.mxi = 0
+      block.properties.fa = 0
+      block.properties.ba = 0
+      block.properties.fa_p = 0
+      block.properties.ba_p = 0
+
       if (mode==='year') {
         block.properties.merchant = 0
         block.properties.industrial = 0
@@ -509,7 +712,8 @@ function App() {
         // console.log(candidates)
         candidates?.features.map((building: Feature<Geometry, GeoJsonProperties>) => {
           if (booleanIntersection(building,block) && building.properties) {
-            
+            block.properties.fa += building.properties.sqr * building.properties.lvl
+            block.properties.ba += building.properties.sqr
             if (building.properties.year_built <= 1871) {
               block.properties.merchant += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
             }
@@ -534,8 +738,6 @@ function App() {
             if (building.properties.year_built > 2007 && building.properties.year_built <= 2025) {
               block.properties.contemporary += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
             }
-            acc_lvl += building.properties.lvl
-            j++
           }
         })
 
@@ -563,7 +765,7 @@ function App() {
           block.properties.epoque = 0
         }
       }
-      if (mode==='usage') {
+      if (mode==='usage' || mode === 'matrix') {
         block.properties.single = 0
         block.properties.multiple = 0
         block.properties.dormi = 0
@@ -576,6 +778,8 @@ function App() {
         const candidates: FeatureCollection<Geometry, GeoJsonProperties>  = tree.search(block)
         candidates?.features.map((building) => {
           if (booleanIntersection(building,block) && building.properties) {
+            block.properties.fa += building.properties.sqr * building.properties.lvl
+            block.properties.ba += building.properties.sqr
             if (building.properties.building_2 === 'detached_house') {
               block.properties.single += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
             }
@@ -586,7 +790,8 @@ function App() {
               block.properties.dormi += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
             }
             if (building.properties.building_2 === 'mixed') {
-              block.properties.mixed += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+              block.properties.commercial += far ? building.properties.sqr : building.properties.sqr*0.5
+              block.properties.residential += far ? building.properties.sqr * (building.properties.lvl-1) : building.properties.sqr*0.5
             }
             if (building.properties.building_2 === 'commercial') {
               block.properties.commercial += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
@@ -600,8 +805,6 @@ function App() {
             if (building.properties.building_2 === 'utility') {
               block.properties.utility += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
             }
-            acc_lvl += building.properties.lvl
-            j++
           }
         })
         block.properties.sum = 
@@ -621,23 +824,32 @@ function App() {
           block.properties.tech,
           block.properties.utility
         ]
-
+        const mxiArray = [
+          block.properties.single+block.properties.multiple+block.properties.dormi,
+          block.properties.commercial,block.properties.public,
+          block.properties.tech+block.properties.utility
+        ]
+        block.properties.mxi = Number(simpsonsIndex(mxiArray))
         const i = indexOfMax(usageArray)
         block.properties.usage = i+1
         if (usageArray[i] === 0) {
           block.properties.usage = 0
         }
       }
-      if (mode==='density') {
-        let acc = 0 
+      if (mode==='density' || mode === 'matrix') {
+
         block.properties.low = 0
         block.properties.mid = 0
         block.properties.high = 0
-        block.properties.sky = 0  
+        block.properties.sky = 0
+        
         const candidates: FeatureCollection<Geometry, GeoJsonProperties> = tree.search(block)
         candidates?.features.map((building) => {
+          
             if (booleanIntersection(building,block) && building.properties) {
-              acc += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+
+              block.properties.fa += building.properties.sqr * building.properties.lvl
+              block.properties.ba += building.properties.sqr
               if (building.properties.lvl >= 1 && building.properties.lvl < 5) {
                 block.properties.low += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
               }
@@ -650,31 +862,356 @@ function App() {
               if (building.properties.lvl >= 17) {
                 block.properties.sky += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
               }
-            acc_lvl += building.properties.lvl
-            j++
           }
         })
         block.properties.sum = block.properties.low + block.properties.mid+block.properties.high + block.properties.sky
-        if (far) {
-          block.properties.far = acc*1.0/block.properties.sqr
-        }
-        if (!far) {
-          block.properties.gsi = acc*1.0/block.properties.sqr
-        }
+        block.properties.far = block.properties.fa/block.properties.sqr
+        block.properties.gsi = block.properties.ba/block.properties.sqr
+        block.properties.mean_lvl = block.properties.far/block.properties.gsi
+        
+
         if (blockFid && blockFid === block.properties.fid) {
           setBlockStat({...block.properties})
         }
 
       }
-      block.properties.mean_lvl = acc_lvl*1.0/j
-      if (j === 0) {
-        block.properties.mean_lvl = 0
+      if (mode==='development') {
+        block.properties.single = 0
+        block.properties.multiple = 0
+        block.properties.dormi = 0
+        block.properties.mixed = 0
+        block.properties.commercial = 0
+        block.properties.public = 0
+        block.properties.tech = 0
+        block.properties.utility = 0
+        block.properties.sum = 0
+        block.properties.single_p = 0
+        block.properties.multiple_p = 0
+        block.properties.dormi_p = 0
+        block.properties.mixed_p = 0
+        block.properties.commercial_p = 0
+        block.properties.public_p = 0
+        block.properties.tech_p = 0
+        block.properties.utility_p = 0
+        block.properties.sum_p = 0
+        const candidates: FeatureCollection<Geometry, GeoJsonProperties>  = tree.search(block)
+        candidates?.features.map((building) => {
+          if (booleanIntersection(building,block) && building.properties) {
+            block.properties.fa += building.properties.sqr * building.properties.lvl
+            block.properties.ba += building.properties.sqr
+            if (building.properties.building_2 === 'detached_house') {
+              block.properties.single += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+            }
+            if (building.properties.building_2 === 'apartments') {
+              block.properties.multiple += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+            }
+            if (building.properties.building_2 === 'dormitory') {
+              block.properties.dormi += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+            }
+            if (building.properties.building_2 === 'mixed') {
+              block.properties.commercial += far ? building.properties.sqr : building.properties.sqr*0.5
+              block.properties.residential += far ? building.properties.sqr * (building.properties.lvl-1) : building.properties.sqr*0.5
+            }
+            if (building.properties.building_2 === 'commercial') {
+              block.properties.commercial += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+            }
+            if (building.properties.building_2 === 'public') {
+              block.properties.public += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+            }
+            if (building.properties.building_2 === 'industrial') {
+              block.properties.tech += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+            }
+            if (building.properties.building_2 === 'utility') {
+              block.properties.utility += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+            }
+          }
+        })
+        const prev_candidates: FeatureCollection<Geometry, GeoJsonProperties>  = prevtree.search(block)
+        prev_candidates?.features.map((building) => {
+          if (booleanIntersection(building,block) && building.properties) {
+            block.properties.fa_p += building.properties.sqr * building.properties.lvl
+            block.properties.ba_p += building.properties.sqr
+            if (building.properties.building_2 === 'detached_house') {
+              block.properties.single_p += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+            }
+            if (building.properties.building_2 === 'apartments') {
+              block.properties.multiple_p += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+            }
+            if (building.properties.building_2 === 'dormitory') {
+              block.properties.dormi_p += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+            }
+            if (building.properties.building_2 === 'mixed') {
+              block.properties.commercial_p += far ? building.properties.sqr : building.properties.sqr*0.5
+              block.properties.residential_p += far ? building.properties.sqr * (building.properties.lvl-1) : building.properties.sqr*0.5
+            }
+            if (building.properties.building_2 === 'commercial') {
+              block.properties.commercial_p += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+            }
+            if (building.properties.building_2 === 'public') {
+              block.properties.public_p += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+            }
+            if (building.properties.building_2 === 'industrial') {
+              block.properties.tech_p += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+            }
+            if (building.properties.building_2 === 'utility') {
+              block.properties.utility_p += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+            }
+          }
+        })
+        block.properties.sum = 
+        +block.properties.single+block.properties.multiple+block.properties.dormi+block.properties.mixed
+        +block.properties.commercial+block.properties.public+block.properties.tech+block.properties.utility
+        if (blockFid && blockFid === block.properties.fid) {
+          console.log('reset')
+          setBlockStat({...block.properties})
+        }
+        const usageArray = [
+          block.properties.single, 
+          block.properties.multiple, 
+          block.properties.dormi,
+          block.properties.mixed,
+          block.properties.commercial,
+          block.properties.public,
+          block.properties.tech,
+          block.properties.utility
+        ]
+        const mxiArray = [
+          block.properties.single+block.properties.multiple+block.properties.dormi,
+          block.properties.commercial,block.properties.public,
+          block.properties.tech+block.properties.utility
+        ]
+        const mxiArray_p = [
+          block.properties.single_p+block.properties.multiple_p+block.properties.dormi_p,
+          block.properties.commercial_p,block.properties.public_p,
+          block.properties.tech_p+block.properties.utility_p
+        ]
+        block.properties.mxi = Number(simpsonsIndex(mxiArray))
+        block.properties.mxi_p = Number(simpsonsIndex(mxiArray_p))
+        block.properties.mxi_d = block.properties.mxi-block.properties.mxi_p
+        block.properties.far = block.properties.fa/block.properties.sqr
+        block.properties.far_p = block.properties.fa_p/block.properties.sqr
+        block.properties.far_d = block.properties.far-block.properties.far_p
+        const i = indexOfMax(usageArray)
+        block.properties.usage = i+1
+        if (usageArray[i] === 0) {
+          block.properties.usage = 0
+        }
       }
-
+      if (mode==='development') {
+        block.properties.single = 0
+        block.properties.multiple = 0
+        block.properties.dormi = 0
+        block.properties.mixed = 0
+        block.properties.commercial = 0
+        block.properties.public = 0
+        block.properties.tech = 0
+        block.properties.utility = 0
+        block.properties.sum = 0
+        block.properties.single_p = 0
+        block.properties.multiple_p = 0
+        block.properties.dormi_p = 0
+        block.properties.mixed_p = 0
+        block.properties.commercial_p = 0
+        block.properties.public_p = 0
+        block.properties.tech_p = 0
+        block.properties.utility_p = 0
+        block.properties.sum_p = 0
+        const candidates: FeatureCollection<Geometry, GeoJsonProperties>  = tree.search(block)
+        candidates?.features.map((building) => {
+          if (booleanIntersection(building,block) && building.properties) {
+            block.properties.fa += building.properties.sqr * building.properties.lvl
+            block.properties.ba += building.properties.sqr
+            if (building.properties.building_2 === 'detached_house') {
+              block.properties.single += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+            }
+            if (building.properties.building_2 === 'apartments') {
+              block.properties.multiple += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+            }
+            if (building.properties.building_2 === 'dormitory') {
+              block.properties.dormi += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+            }
+            if (building.properties.building_2 === 'mixed') {
+              block.properties.commercial += far ? building.properties.sqr : building.properties.sqr*0.5
+              block.properties.residential += far ? building.properties.sqr * (building.properties.lvl-1) : building.properties.sqr*0.5
+            }
+            if (building.properties.building_2 === 'commercial') {
+              block.properties.commercial += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+            }
+            if (building.properties.building_2 === 'public') {
+              block.properties.public += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+            }
+            if (building.properties.building_2 === 'industrial') {
+              block.properties.tech += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+            }
+            if (building.properties.building_2 === 'utility') {
+              block.properties.utility += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+            }
+          }
+        })
+        const prev_candidates: FeatureCollection<Geometry, GeoJsonProperties>  = prevtree.search(block)
+        prev_candidates?.features.map((building) => {
+          if (booleanIntersection(building,block) && building.properties) {
+            block.properties.fa_p += building.properties.sqr * building.properties.lvl
+            block.properties.ba_p += building.properties.sqr
+            if (building.properties.building_2 === 'detached_house') {
+              block.properties.single_p += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+            }
+            if (building.properties.building_2 === 'apartments') {
+              block.properties.multiple_p += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+            }
+            if (building.properties.building_2 === 'dormitory') {
+              block.properties.dormi_p += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+            }
+            if (building.properties.building_2 === 'mixed') {
+              block.properties.commercial_p += far ? building.properties.sqr : building.properties.sqr*0.5
+              block.properties.residential_p += far ? building.properties.sqr * (building.properties.lvl-1) : building.properties.sqr*0.5
+            }
+            if (building.properties.building_2 === 'commercial') {
+              block.properties.commercial_p += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+            }
+            if (building.properties.building_2 === 'public') {
+              block.properties.public_p += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+            }
+            if (building.properties.building_2 === 'industrial') {
+              block.properties.tech_p += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+            }
+            if (building.properties.building_2 === 'utility') {
+              block.properties.utility_p += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+            }
+          }
+        })
+        block.properties.sum = 
+        +block.properties.single+block.properties.multiple+block.properties.dormi+block.properties.mixed
+        +block.properties.commercial+block.properties.public+block.properties.tech+block.properties.utility
+        if (blockFid && blockFid === block.properties.fid) {
+          console.log('reset')
+          setBlockStat({...block.properties})
+        }
+        const usageArray = [
+          block.properties.single, 
+          block.properties.multiple, 
+          block.properties.dormi,
+          block.properties.mixed,
+          block.properties.commercial,
+          block.properties.public,
+          block.properties.tech,
+          block.properties.utility
+        ]
+        const mxiArray = [
+          block.properties.single+block.properties.multiple+block.properties.dormi,
+          block.properties.commercial,block.properties.public,
+          block.properties.tech+block.properties.utility
+        ]
+        const mxiArray_p = [
+          block.properties.single_p+block.properties.multiple_p+block.properties.dormi_p,
+          block.properties.commercial_p,block.properties.public_p,
+          block.properties.tech_p+block.properties.utility_p
+        ]
+        block.properties.mxi = Number(simpsonsIndex(mxiArray))
+        block.properties.mxi_p = Number(simpsonsIndex(mxiArray_p))
+        block.properties.mxi_d = block.properties.mxi-block.properties.mxi_p
+        block.properties.far = block.properties.fa/block.properties.sqr
+        block.properties.far_p = block.properties.fa_p/block.properties.sqr
+        block.properties.far_d = block.properties.far-block.properties.far_p
+        const i = indexOfMax(usageArray)
+        block.properties.usage = i+1
+        if (usageArray[i] === 0) {
+          block.properties.usage = 0
+        }
+      }
       return block
     })
     if (upd_features) {
-      // console.log(upd_features[246].properties)
+      if (mode === 'matrix') {
+          const blockCount = {
+            0: 0, 1: 0, 2: 0,
+            3: 0, 4: 0, 5: 0,
+            6: 0, 7: 0, 8: 0
+        }
+        if (upd_features) {upd_features.map((block: GeoJSONFeature) => {
+            console.log('calc')
+            if (block.properties['mean_lvl'] <= 3) {
+                if (block.properties['gsi'] <= 0.15) {
+                    blockCount[0]+=block.properties['sqr']
+                }
+                if (block.properties['gsi'] >= 0.15 && block.properties['gsi'] < 0.3) {
+                    blockCount[1]+=block.properties['sqr']
+                }
+                if (block.properties['gsi'] > 0.3) {
+                    blockCount[2]+=block.properties['sqr']
+                }
+            }
+            if (block.properties['mean_lvl'] > 3 && block.properties['mean_lvl'] <= 9) {
+                if (block.properties['gsi'] <= 0.15) {
+                    blockCount[3]+=block.properties['sqr']
+                }
+                if (block.properties['gsi'] >= 0.15 && block.properties['gsi'] < 0.3) {
+                    blockCount[4]+=block.properties['sqr']
+                }
+                if (block.properties['gsi'] > 0.3) {
+                    blockCount[5]+=block.properties['sqr']
+                }
+            }
+            if (block.properties['mean_lvl'] > 9) {
+                if (block.properties['gsi'] <= 0.15) {
+                    blockCount[6]+=block.properties['sqr']
+                }
+                if (block.properties['gsi'] >= 0.15 && block.properties['gsi'] < 0.3) {
+                    blockCount[7]+=block.properties['sqr']
+                }
+                if (block.properties['gsi'] > 0.3) {
+                    blockCount[8]+=block.properties['sqr']
+                }
+            }
+        })}
+        setMatrixCount(blockCount)
+
+      }
+      if (mode === 'development') {
+          const blockCount = {
+            0: 0, 1: 0, 2: 0,
+            3: 0, 4: 0, 5: 0,
+            6: 0, 7: 0, 8: 0
+        }
+        if (upd_features) {upd_features.map((block: GeoJSONFeature) => {
+            console.log('calc')
+            if (block.properties['mxi_d'] < 0) {
+                if (block.properties['far_d'] < 0) {
+                    blockCount[0]+=block.properties['sqr']
+                }
+                if (block.properties['far_d'] === 0) {
+                    blockCount[1]+=block.properties['sqr']
+                }
+                if (block.properties['far_d'] > 0) {
+                    blockCount[2]+=block.properties['sqr']
+                }
+            }
+            if (block.properties['mxi_d'] === 0) {
+                if (block.properties['far_d'] < 0) {
+                    blockCount[3]+=block.properties['sqr']
+                }
+                if (block.properties['far_d'] === 0) {
+                    blockCount[4]+=block.properties['sqr']
+                }
+                if (block.properties['far_d'] > 0) {
+                    blockCount[5]+=block.properties['sqr']
+                }
+            }
+            if (block.properties['mxi_d'] > 0) {
+                if (block.properties['far_d'] < 0) {
+                    blockCount[6]+=block.properties['sqr']
+                }
+                if (block.properties['far_d'] === 0) {
+                    blockCount[7]+=block.properties['sqr']
+                }
+                if (block.properties['far_d'] > 0) {
+                    blockCount[8]+=block.properties['sqr']
+                }
+            }
+        })}
+        setDevMatrixCount(blockCount)
+
+      }
       setNewBlocks({
         type: 'FeatureCollection', 
         name: `${Date.now().toString()}`, 
@@ -686,6 +1223,9 @@ function App() {
         }, 
         features: upd_features
       })
+
+
+
       const properties = extractObjects(upd_features, 'properties')
       if (!blockFid) {
         console.log(properties)
@@ -694,7 +1234,7 @@ function App() {
       const elapsedTime = performance.now() - startTime
       console.log(`${label} took ${elapsedTime.toFixed(2)}ms to run`)
     }
-  },[filteredBlocks, blockFid, filteredBuildings, mode, far])
+  },[filteredBlocks, blockFid, filteredBuildings, mode, far, prevBuildings])
 
   useEffect(() => {
     if (mode === 'density') {
@@ -796,6 +1336,48 @@ function App() {
         ],
       }
     }
+    if (mode ==='matrix') {
+      return {
+        labels: [
+          'Точечная малоэтажная застройка', 
+          'Малоэтажная застройка', 
+          'Плотная малоэтажная застройка', 
+          'Точечная среднеэтажная застройка', 
+          'Среднеэтажная застройка', 
+          'Плотная среднеэтажная застройка',
+          'Точечная высотная застройка', 
+          'Высотная застройка',
+          'Плотная высотная застройка', 
+        ],
+        datasets: [
+          {
+            data: [
+              matrixCount[0], 
+              matrixCount[1], 
+              matrixCount[2], 
+              matrixCount[3],
+              matrixCount[4],
+              matrixCount[5],
+              matrixCount[6],
+              matrixCount[7],
+              matrixCount[8]
+            ],
+            backgroundColor: [
+              '#004c02ff',
+              '#8da000ff',
+              '#ffb700ff',
+              '#009a6cff',
+              '#3bb001ff',
+              '#b5de00ff',
+              '#00ffffff',
+              '#00ffaeff',
+              '#1eff00ff',
+            ],
+            borderColor: '#000000', // Black borders
+          },
+        ],
+      }
+    }
     else {
       return {
         labels: [
@@ -836,7 +1418,7 @@ function App() {
         ],
       }
     }
-  },[blockStat, mode])
+  },[blockStat, matrixCount, mode])
 
   const doughnutOptions: ChartOptions<'doughnut'> = useMemo(() => {
     return {
@@ -942,7 +1524,7 @@ function App() {
         blockStat?.single ?? 0,
         blockStat?.multiple ?? 0,
         blockStat?.dormi ?? 0,
-        blockStat?.mixed ?? 0,
+        // blockStat?.mixed ?? 0,
         blockStat?.commercial ?? 0,
         blockStat?.public ?? 0,
         blockStat?.tech ?? 0,
@@ -954,7 +1536,7 @@ function App() {
         { label: 'Индивидуальные жилые дома', value: blockStat?.single ?? 0, color: 'rgb(184, 255, 104)', maxValue: max },
         { label: 'Многоквартирные дома', value: blockStat?.multiple ?? 0, color: 'rgb(252, 195, 50)', maxValue: max },
         { label: 'Бараки и казармы', value: blockStat?.dormi ?? 0, color: 'rgb(255, 197, 135)', maxValue: max },
-        { label: 'Многофункциональные здания', value: blockStat?.mixed ?? 0, color: 'rgb(254, 127, 0)', maxValue: max },
+        // { label: 'Многофункциональные здания', value: blockStat?.mixed ?? 0, color: 'rgb(254, 127, 0)', maxValue: max },
         { label: 'Торговые и офисные здания', value: blockStat?.commercial ?? 0, color: 'rgb(255, 44, 44)', maxValue: max },
         { label: 'Общественные здания', value: blockStat?.public ?? 0, color: 'rgb(64, 210, 255)', maxValue: max },
         { label: 'Производственные здания', value: blockStat?.tech ?? 0, color: 'rgb(54, 43, 123)', maxValue: max },
@@ -991,8 +1573,9 @@ function App() {
     if (blockStat) {
       if (mode === 'usage') {
         return simpsonsIndex([
-          blockStat?.single, blockStat?.multiple, blockStat?.dormi, blockStat?.mixed, blockStat?.commercial,
-          blockStat?.public,blockStat?.tech, blockStat?.utility 
+          blockStat?.single+blockStat?.multiple+blockStat?.dormi, 
+          blockStat?.commercial,blockStat?.public,
+          blockStat?.tech+blockStat?.utility 
         ])
       }
       if (mode === 'year') {
@@ -1004,6 +1587,9 @@ function App() {
       if (mode === 'density') {
         return (blockStat.sum / blockStat.sqr).toFixed(2) 
       }
+      if (mode==='matrix') {
+        return ((1-(blockStat.ba/blockStat.sqr)) / (blockStat.fa/blockStat.sqr)).toFixed(2) 
+      }
     }
   },[blockStat, mode])
 
@@ -1011,10 +1597,12 @@ function App() {
     if (mode==='year') {
       return <span>Индекс гомогенности</span>
     } else if (mode==='usage') {
-      return <span>Индекс разнообразия</span>
+      return <span>Mixed Use Index</span>
     } else if (mode==='density') {
       return far ? <span>Floor Surface Index</span> : <span>Ground Surface Index</span>
-    }    
+    } else if (mode === 'matrix') {
+      return <span>Open Space Ratio</span>
+    }
   },[mode,far])
 
   useEffect(() => {
@@ -1056,7 +1644,7 @@ function App() {
 
           <div style={{ display: 'flex', alignItems: 'flex-start' }}>
             {/* Left column - Doughnut with centered value and bottom text */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginRight: '16px' }}>
+            {mode!='development'&&<div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginRight: '16px' }}>
               <div style={{ position: 'relative', width: '160px', height: '160px' }}>
                 <Doughnut id='doughnut' options={doughnutOptions} data={data} />
                 <div style={{
@@ -1066,7 +1654,16 @@ function App() {
                   transform: 'translate(-50%, -50%)',
                   textAlign: 'center',
                 }}>
-                  <div style={{ fontSize: '24px', fontWeight: 'bold' }}>
+                  <div 
+                    style={{ 
+                      fontSize: '24px', fontWeight: 'bold', 
+                      // border: '1px solid red', 
+                      borderRadius: '100%', 
+                      height: '60px', width: '60px', alignContent: 'center',
+                      backgroundColor: mxi ?'#d8d8d8ff':'black', color: mxi ? 'black':'white'
+                    }}
+                    onClick={onIndexClick}
+                  >
                     {diversityIndex}
                   </div>
                 </div>
@@ -1075,18 +1672,40 @@ function App() {
               <div style={{ fontSize: '14px', color: '#999', marginTop: '8px' }}>
                 {footnote}
               </div>
-            </div>
+            </div>}
+            {  
+              mode === 'development' && <div  style={{display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
+                <span style={{ marginTop: '10px'}}>
+                  Изменения за предыдущие
+                </span>
+                <div style={{display: 'flex', flexDirection: 'row', alignItems: 'center', marginTop: '10px'}}>
+                  <Slider 
+                    range={false}
+                    style={{width: 200, margin: '20px'}}
+                    styles={{track: {background: 'white'}}}
+                    min={1} max={200} disabled={articleMode}
+                    value={threshold} onChange={(value) => setThreshold(value)} reverse
+                  />
+                  <InputNumber
+                    style={{width: '50px', marginRight: '10px'}}
+                    value={threshold} disabled={articleMode}
+                    onChange={(value: number|null) =>  setThreshold(value??1)} 
+                  />
+                  <span>лет</span>
+                </div>
+              </div>
+            }
 
   {/* Right column - Primary and secondary values */}
-            <div style={{ marginLeft: '16px', marginTop: '22px'}}>
+            {mode!='development'&&<div style={{ marginLeft: '16px', marginTop: '22px'}}>
               <div style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '4px', marginTop: '6px' }}>
                 {blockFid ? <span>Квартал №{blockFid}</span> : <span>Все кварталы</span>}
               </div>
               <div style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '4px', marginTop: '10px' }}>
-                {blockStat && (Number(blockStat.sum)*0.0001).toFixed(1)} га       
+                {blockStat && ((mode==='matrix' ? (Number(blockStat.sqr) - Number(blockStat.ba)):Number(blockStat.sum))*0.0001 ).toFixed(1)} га       
               </div>
               <div style={{ fontSize: '14px' }}>
-                  площадь застройки
+                  {mode==='matrix' ? <span>незастроенная площадь</span>:<span>площадь застройки</span>}
               </div>
               <div style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '4px', marginTop: '8px' }}>
                 {blockStat && (Number(blockStat.sqr)*0.0001).toFixed(1)} га
@@ -1094,10 +1713,11 @@ function App() {
               <div style={{ fontSize: '14px' }}>
                   площадь земель
               </div>
-            </div>
+            </div>}
           </div>
-          {mode !== 'density' && 
+          {(mode === 'year'|| mode === 'usage') && 
             <div style={{ width: '100%', height: '360px' }}>
+              {mode === 'usage' && <MScale/>}
               <BarList data={listData}/>
             </div>
           }
@@ -1110,8 +1730,18 @@ function App() {
                 <Bar id='lvl' data={lvlData} options={lvlOptions}/>
               </div>
             </div> 
-
           }
+          {mode === 'matrix' &&
+            <div style={{width: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center'}}>
+              <SpaceMatrix matrixCount={matrixCount} />
+            </div>
+          }
+          {mode === 'development' &&
+            <div style={{width: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center'}}>
+              <DevMatrix matrixCount={devMatrixCount} />
+            </div>
+          }
+          
         </div>}
         <Map
           ref={mapRef}
@@ -1172,6 +1802,11 @@ function App() {
             style={{position: 'absolute', bottom: '120px', right: '35px', width: '50px', height: '50px'}}
           >
             {volume ? <h2>3d</h2> : <h2>2d</h2>}
+          </Button>}
+          {!articleMode && <Button shape='circle' onClick={downloadClick}
+            style={{position: 'absolute', top: '180px', right: '35px', width: '50px', height: '50px', fontSize: '1.3rem'}}
+          >
+            <DownloadOutlined/>
           </Button>}
           <Button 
             style={{position: 'absolute', bottom: '50px', right: '10px', height: '40px', width: '100px'}}
