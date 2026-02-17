@@ -1,12 +1,19 @@
+
 import './SpaceMatrix.css'
+
 
 const grey = '#3d3d3dff'
 
-export const SpaceMatrix = ({matrixCount}: {matrixCount:{[name:number]:number}}) => {
+interface MatrixProps {
+    matrixCount: {[name:number]:number};
+}
+
+export const SpaceMatrix = ({matrixCount}: MatrixProps) => {
     console.log(matrixCount)
 
     return (
         <div className='matrix_container'>
+            
             <div className="matrix_rows">
                 <div className="row">
                     <div className="cell" style={{backgroundColor: matrixCount['6'] === 0 ? grey: '#00ffffff'}}>{(matrixCount['6']*0.0001).toFixed(0)} га</div>
@@ -19,7 +26,7 @@ export const SpaceMatrix = ({matrixCount}: {matrixCount:{[name:number]:number}})
                     <div className="cell" style={{backgroundColor: matrixCount['5'] === 0 ? grey: '#b5de00ff'}}>{(matrixCount['5']*0.0001).toFixed(0)} га</div>
                 </div>
                 <div className="row">
-                    <div className="cell" style={{backgroundColor: matrixCount['0'] === 0 ? grey: '#004c02ff'}}>{(matrixCount['0']*0.0001).toFixed(0)} га</div>
+                    <div className="cell" style={{backgroundColor: matrixCount['0'] === 0 ? grey: 'rgb(0, 105, 3)'}}>{(matrixCount['0']*0.0001).toFixed(0)} га</div>
                     <div className="cell" style={{backgroundColor: matrixCount['1'] === 0 ? grey: '#8da000ff'}}>{(matrixCount['1']*0.0001).toFixed(0)} га</div>
                     <div className="cell" style={{backgroundColor: matrixCount['2'] === 0 ? grey: '#ffb700ff'}}>{(matrixCount['2']*0.0001).toFixed(0)} га</div>
                 </div>

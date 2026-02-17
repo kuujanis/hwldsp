@@ -69,3 +69,17 @@
 .ant-btn-primary {
   color: black !important;
 }
+.disc {
+  font-size: 24px;
+  font-weight: bold; 
+  border-radius: 100%; 
+  height: 60px; 
+  width: 60px; 
+  align-content: center;
+}
+.disc:hover {
+  border: 2px solid rgb(176, 176, 176);
+}
+.fscBtn {
+  font-size: 1.4rem;
+}

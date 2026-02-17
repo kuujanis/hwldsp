@@ -15,22 +15,15 @@ import rbush from 'geojson-rbush';
 import { Feature, FeatureCollection, GeoJsonProperties, Geometry } from 'geojson';
 import { Scale } from './components/Scales/Scale';
 import { BarList } from './components/BarChart.tsx/BarChart';
-import { DownloadOutlined, LeftOutlined, RightOutlined } from '@ant-design/icons';
-import { SpaceMatrix } from './components/Matrix/SpaceMatrix';
-import { DevMatrix } from './components/Matrix/DevMatrix';
+import { DownloadOutlined, FullscreenExitOutlined, FullscreenOutlined, LeftOutlined, RightOutlined } from '@ant-design/icons';
+// import { SpaceMatrix } from './components/Matrix/SpaceMatrix';
 import { MScale } from './components/Scales/MScale';
-
-
+import MatrixChart from './components/MatrixChart';
+import { GeoJSON } from './utils/types';
+import { SpaceMatrix } from './components/Matrix/SpaceMatrix';
 
 const BLOCKS_URL = new URL('./assets/blocks_buf.geojson', import.meta.url).href;
 const BUILDINGS_URL = new URL('./assets/building_n.geojson', import.meta.url).href;
-
-interface GeoJSON {
-  type: "FeatureCollection",
-  name: string,
-  crs: {type: string, properties: {[name: string]: string;}}
-  features: GeoJSONFeature[]
-}
 
 const emptyGeoJSON:GeoJSON = {
   type: 'FeatureCollection', 
@@ -86,7 +79,7 @@ const modeOptions = [
   {value: 'usage', label: <span>Тип застройки</span>},
   {value: 'density', label: <span>Плотность застройки</span>},
   {value: 'matrix', label: <span>Матрица пространства</span>},
-  {value: 'development', label:<span>Матрица развития</span>}
+  // {value: 'development', label:<span>Матрица развития</span>}
 ]
 
 // const json: {[name:string]:number}[]|null = []
@@ -102,6 +95,7 @@ function App() {
   const [mode, setMode] = useState<string>('usage')
   const [mxi, setMxi] = useState<boolean>(false)
   const [far, setFar] = useState<boolean>(true)
+  const [fullSc,setFullSc] = useState<boolean>(false)
   const [blockStat, setBlockStat] = useState<{[name: string]: number}|null>(null)
   const [lvlStat, setLvlStat] = useState<number[]>(lvlStatDefault)
   const [blockFid, setBlockFid] = useState<number|null>(null)
@@ -119,13 +113,14 @@ function App() {
     6: 0, 7: 0, 8: 0
   })
 
-  const [devMatrixCount, setDevMatrixCount] = useState<{[name:number]:number}>({
-    0: 0, 1: 0, 2: 0,
-    3: 0, 4: 0, 5: 0,
-    6: 0, 7: 0, 8: 0
-  })
+  // const [devMatrixCount, setDevMatrixCount] = useState<{[name:number]:number}>({
+  //   0: 0, 1: 0, 2: 0,
+  //   3: 0, 4: 0, 5: 0,
+  //   6: 0, 7: 0, 8: 0
+  // })
 
-  const [blockMode, toggleBlockMode] = useReducer((prevState) => !prevState, false)
+  const [blockMode, setBlockMode] = useState<boolean>(false)
+
   const [articleMode, toggleArticleMode] = useReducer((prevState) => !prevState, true)
   const [selectedBuilding, setSelectedBuilding] = useState<{[name: string]: string|number}|null>(null)
 
@@ -283,7 +278,9 @@ function App() {
     }
     if (mode==='matrix') {
       blockLayerStyle.paint = {
-        'fill-extrusion-color': !far ? [
+        'fill-extrusion-color': 
+        // !far ? 
+        [
           "case",
           ['all',["<", ["get", "gsi"], 0.15], ["<=",["get","mean_lvl"],3]], "#004c02ff", 
           ['all',["<", ["get", "gsi"], 0.15], [">",["get","mean_lvl"],3], ["<=",["get","mean_lvl"],9]], "#009a6cff", 
@@ -295,19 +292,21 @@ function App() {
           ['all',[">", ["get", "gsi"], 0.3], [">",["get","mean_lvl"],3], ["<=",["get","mean_lvl"],9]], "#b5de00ff", 
           ['all',[">", ["get", "gsi"], 0.3], [">",["get","mean_lvl"],9]], "#1eff00ff", 
           "grey" 
-        ] : [
-          "case",
-          ['all',["<", ["get", "far"], 0.5], ["<=",["get","mxi"],0.1]], "#200082ff", 
-          ['all',["<", ["get", "far"], 0.5], [">",["get","mxi"],0.1], ["<=",["get","mxi"],0.4]], "#a92395ff", 
-          ['all',["<", ["get", "far"], 0.5], [">",["get","mxi"],0.4]], '#ff6a00ff',  
-          ['all',[">", ["get", "far"], 0.5], ["<", ["get", "far"], 1], ["<=",["get","mxi"],0.1]], "#7e03a8ff",
-          ['all',[">", ["get", "far"], 0.5], ["<", ["get", "far"], 1], [">",["get","mxi"],0.1], ["<=",["get","mxi"],0.4]], "#cc4678ff",
-          ['all',[">", ["get", "far"], 0.5], ["<", ["get", "far"], 1], [">",["get","mxi"],0.4]], "#ffa200ff", 
-          ['all',[">", ["get", "far"], 1], ["<=",["get","mxi"],0.1]], "#8e00c6ff", 
-          ['all',[">", ["get", "far"], 1], [">",["get","mxi"],0.1], ["<=",["get","mxi"],0.4]], "#e56b5dff", 
-          ['all',[">", ["get", "far"], 1], [">",["get","mxi"],0.4]], "#ffea00ff", 
-          "grey" 
-        ],
+        ] 
+        // : [
+        //   "case",
+        //   ['all',["<", ["get", "far"], 0.3], ["<=",["get","mxi"],0.1]], "#200082ff", 
+        //   ['all',["<", ["get", "far"], 0.3], [">",["get","mxi"],0.1], ["<=",["get","mxi"],0.4]], "#a92395ff", 
+        //   ['all',["<", ["get", "far"], 0.3], [">",["get","mxi"],0.4]], '#ff6a00ff',  
+        //   ['all',[">", ["get", "far"], 0.3], ["<", ["get", "far"], 0.6], ["<=",["get","mxi"],0.1]], "#7e03a8ff",
+        //   ['all',[">", ["get", "far"], 0.3], ["<", ["get", "far"], 0.6], [">",["get","mxi"],0.1], ["<=",["get","mxi"],0.4]], "#cc4678ff",
+        //   ['all',[">", ["get", "far"], 0.3], ["<", ["get", "far"], 0.6], [">",["get","mxi"],0.4]], "#ffa200ff", 
+        //   ['all',[">", ["get", "far"], 0.6], ["<=",["get","mxi"],0.1]], "rgb(247, 0, 255)", 
+        //   ['all',[">", ["get", "far"], 0.6], [">",["get","mxi"],0.1], ["<=",["get","mxi"],0.4]], "#e56b5dff", 
+        //   ['all',[">", ["get", "far"], 0.6], [">",["get","mxi"],0.4]], "#ffea00ff", 
+        //   "grey" 
+        // ]
+        ,
         'fill-extrusion-height': [
           'interpolate',
           ['linear'],
@@ -599,7 +598,7 @@ function App() {
           setSelectedBuilding({...feature.properties})
         }
         if (feature.layer.id === 'blocks'|| feature.layer.id === 'flatBlocks' || feature.layer.id === 'flatFill' ) {
-          console.log('block')
+          console.log('block: ',feature.properties)
           setBlockStat({...feature.properties})
           setBlockFid(feature.properties.fid)
           setSelectedBlock(feature)
@@ -765,7 +764,7 @@ function App() {
           block.properties.epoque = 0
         }
       }
-      if (mode==='usage' || mode === 'matrix') {
+      if (mode==='usage') {
         block.properties.single = 0
         block.properties.multiple = 0
         block.properties.dormi = 0
@@ -865,8 +864,8 @@ function App() {
           }
         })
         block.properties.sum = block.properties.low + block.properties.mid+block.properties.high + block.properties.sky
-        block.properties.far = block.properties.fa/block.properties.sqr
-        block.properties.gsi = block.properties.ba/block.properties.sqr
+        block.properties.far = (block.properties.fa+1)/block.properties.sqr
+        block.properties.gsi = (block.properties.ba+1)/block.properties.sqr
         block.properties.mean_lvl = block.properties.far/block.properties.gsi
         
 
@@ -875,250 +874,250 @@ function App() {
         }
 
       }
-      if (mode==='development') {
-        block.properties.single = 0
-        block.properties.multiple = 0
-        block.properties.dormi = 0
-        block.properties.mixed = 0
-        block.properties.commercial = 0
-        block.properties.public = 0
-        block.properties.tech = 0
-        block.properties.utility = 0
-        block.properties.sum = 0
-        block.properties.single_p = 0
-        block.properties.multiple_p = 0
-        block.properties.dormi_p = 0
-        block.properties.mixed_p = 0
-        block.properties.commercial_p = 0
-        block.properties.public_p = 0
-        block.properties.tech_p = 0
-        block.properties.utility_p = 0
-        block.properties.sum_p = 0
-        const candidates: FeatureCollection<Geometry, GeoJsonProperties>  = tree.search(block)
-        candidates?.features.map((building) => {
-          if (booleanIntersection(building,block) && building.properties) {
-            block.properties.fa += building.properties.sqr * building.properties.lvl
-            block.properties.ba += building.properties.sqr
-            if (building.properties.building_2 === 'detached_house') {
-              block.properties.single += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
-            }
-            if (building.properties.building_2 === 'apartments') {
-              block.properties.multiple += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
-            }
-            if (building.properties.building_2 === 'dormitory') {
-              block.properties.dormi += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
-            }
-            if (building.properties.building_2 === 'mixed') {
-              block.properties.commercial += far ? building.properties.sqr : building.properties.sqr*0.5
-              block.properties.residential += far ? building.properties.sqr * (building.properties.lvl-1) : building.properties.sqr*0.5
-            }
-            if (building.properties.building_2 === 'commercial') {
-              block.properties.commercial += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
-            }
-            if (building.properties.building_2 === 'public') {
-              block.properties.public += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
-            }
-            if (building.properties.building_2 === 'industrial') {
-              block.properties.tech += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
-            }
-            if (building.properties.building_2 === 'utility') {
-              block.properties.utility += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
-            }
-          }
-        })
-        const prev_candidates: FeatureCollection<Geometry, GeoJsonProperties>  = prevtree.search(block)
-        prev_candidates?.features.map((building) => {
-          if (booleanIntersection(building,block) && building.properties) {
-            block.properties.fa_p += building.properties.sqr * building.properties.lvl
-            block.properties.ba_p += building.properties.sqr
-            if (building.properties.building_2 === 'detached_house') {
-              block.properties.single_p += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
-            }
-            if (building.properties.building_2 === 'apartments') {
-              block.properties.multiple_p += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
-            }
-            if (building.properties.building_2 === 'dormitory') {
-              block.properties.dormi_p += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
-            }
-            if (building.properties.building_2 === 'mixed') {
-              block.properties.commercial_p += far ? building.properties.sqr : building.properties.sqr*0.5
-              block.properties.residential_p += far ? building.properties.sqr * (building.properties.lvl-1) : building.properties.sqr*0.5
-            }
-            if (building.properties.building_2 === 'commercial') {
-              block.properties.commercial_p += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
-            }
-            if (building.properties.building_2 === 'public') {
-              block.properties.public_p += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
-            }
-            if (building.properties.building_2 === 'industrial') {
-              block.properties.tech_p += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
-            }
-            if (building.properties.building_2 === 'utility') {
-              block.properties.utility_p += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
-            }
-          }
-        })
-        block.properties.sum = 
-        +block.properties.single+block.properties.multiple+block.properties.dormi+block.properties.mixed
-        +block.properties.commercial+block.properties.public+block.properties.tech+block.properties.utility
-        if (blockFid && blockFid === block.properties.fid) {
-          console.log('reset')
-          setBlockStat({...block.properties})
-        }
-        const usageArray = [
-          block.properties.single, 
-          block.properties.multiple, 
-          block.properties.dormi,
-          block.properties.mixed,
-          block.properties.commercial,
-          block.properties.public,
-          block.properties.tech,
-          block.properties.utility
-        ]
-        const mxiArray = [
-          block.properties.single+block.properties.multiple+block.properties.dormi,
-          block.properties.commercial,block.properties.public,
-          block.properties.tech+block.properties.utility
-        ]
-        const mxiArray_p = [
-          block.properties.single_p+block.properties.multiple_p+block.properties.dormi_p,
-          block.properties.commercial_p,block.properties.public_p,
-          block.properties.tech_p+block.properties.utility_p
-        ]
-        block.properties.mxi = Number(simpsonsIndex(mxiArray))
-        block.properties.mxi_p = Number(simpsonsIndex(mxiArray_p))
-        block.properties.mxi_d = block.properties.mxi-block.properties.mxi_p
-        block.properties.far = block.properties.fa/block.properties.sqr
-        block.properties.far_p = block.properties.fa_p/block.properties.sqr
-        block.properties.far_d = block.properties.far-block.properties.far_p
-        const i = indexOfMax(usageArray)
-        block.properties.usage = i+1
-        if (usageArray[i] === 0) {
-          block.properties.usage = 0
-        }
-      }
-      if (mode==='development') {
-        block.properties.single = 0
-        block.properties.multiple = 0
-        block.properties.dormi = 0
-        block.properties.mixed = 0
-        block.properties.commercial = 0
-        block.properties.public = 0
-        block.properties.tech = 0
-        block.properties.utility = 0
-        block.properties.sum = 0
-        block.properties.single_p = 0
-        block.properties.multiple_p = 0
-        block.properties.dormi_p = 0
-        block.properties.mixed_p = 0
-        block.properties.commercial_p = 0
-        block.properties.public_p = 0
-        block.properties.tech_p = 0
-        block.properties.utility_p = 0
-        block.properties.sum_p = 0
-        const candidates: FeatureCollection<Geometry, GeoJsonProperties>  = tree.search(block)
-        candidates?.features.map((building) => {
-          if (booleanIntersection(building,block) && building.properties) {
-            block.properties.fa += building.properties.sqr * building.properties.lvl
-            block.properties.ba += building.properties.sqr
-            if (building.properties.building_2 === 'detached_house') {
-              block.properties.single += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
-            }
-            if (building.properties.building_2 === 'apartments') {
-              block.properties.multiple += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
-            }
-            if (building.properties.building_2 === 'dormitory') {
-              block.properties.dormi += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
-            }
-            if (building.properties.building_2 === 'mixed') {
-              block.properties.commercial += far ? building.properties.sqr : building.properties.sqr*0.5
-              block.properties.residential += far ? building.properties.sqr * (building.properties.lvl-1) : building.properties.sqr*0.5
-            }
-            if (building.properties.building_2 === 'commercial') {
-              block.properties.commercial += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
-            }
-            if (building.properties.building_2 === 'public') {
-              block.properties.public += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
-            }
-            if (building.properties.building_2 === 'industrial') {
-              block.properties.tech += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
-            }
-            if (building.properties.building_2 === 'utility') {
-              block.properties.utility += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
-            }
-          }
-        })
-        const prev_candidates: FeatureCollection<Geometry, GeoJsonProperties>  = prevtree.search(block)
-        prev_candidates?.features.map((building) => {
-          if (booleanIntersection(building,block) && building.properties) {
-            block.properties.fa_p += building.properties.sqr * building.properties.lvl
-            block.properties.ba_p += building.properties.sqr
-            if (building.properties.building_2 === 'detached_house') {
-              block.properties.single_p += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
-            }
-            if (building.properties.building_2 === 'apartments') {
-              block.properties.multiple_p += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
-            }
-            if (building.properties.building_2 === 'dormitory') {
-              block.properties.dormi_p += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
-            }
-            if (building.properties.building_2 === 'mixed') {
-              block.properties.commercial_p += far ? building.properties.sqr : building.properties.sqr*0.5
-              block.properties.residential_p += far ? building.properties.sqr * (building.properties.lvl-1) : building.properties.sqr*0.5
-            }
-            if (building.properties.building_2 === 'commercial') {
-              block.properties.commercial_p += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
-            }
-            if (building.properties.building_2 === 'public') {
-              block.properties.public_p += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
-            }
-            if (building.properties.building_2 === 'industrial') {
-              block.properties.tech_p += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
-            }
-            if (building.properties.building_2 === 'utility') {
-              block.properties.utility_p += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
-            }
-          }
-        })
-        block.properties.sum = 
-        +block.properties.single+block.properties.multiple+block.properties.dormi+block.properties.mixed
-        +block.properties.commercial+block.properties.public+block.properties.tech+block.properties.utility
-        if (blockFid && blockFid === block.properties.fid) {
-          console.log('reset')
-          setBlockStat({...block.properties})
-        }
-        const usageArray = [
-          block.properties.single, 
-          block.properties.multiple, 
-          block.properties.dormi,
-          block.properties.mixed,
-          block.properties.commercial,
-          block.properties.public,
-          block.properties.tech,
-          block.properties.utility
-        ]
-        const mxiArray = [
-          block.properties.single+block.properties.multiple+block.properties.dormi,
-          block.properties.commercial,block.properties.public,
-          block.properties.tech+block.properties.utility
-        ]
-        const mxiArray_p = [
-          block.properties.single_p+block.properties.multiple_p+block.properties.dormi_p,
-          block.properties.commercial_p,block.properties.public_p,
-          block.properties.tech_p+block.properties.utility_p
-        ]
-        block.properties.mxi = Number(simpsonsIndex(mxiArray))
-        block.properties.mxi_p = Number(simpsonsIndex(mxiArray_p))
-        block.properties.mxi_d = block.properties.mxi-block.properties.mxi_p
-        block.properties.far = block.properties.fa/block.properties.sqr
-        block.properties.far_p = block.properties.fa_p/block.properties.sqr
-        block.properties.far_d = block.properties.far-block.properties.far_p
-        const i = indexOfMax(usageArray)
-        block.properties.usage = i+1
-        if (usageArray[i] === 0) {
-          block.properties.usage = 0
-        }
-      }
+      // if (mode==='development') {
+      //   block.properties.single = 0
+      //   block.properties.multiple = 0
+      //   block.properties.dormi = 0
+      //   block.properties.mixed = 0
+      //   block.properties.commercial = 0
+      //   block.properties.public = 0
+      //   block.properties.tech = 0
+      //   block.properties.utility = 0
+      //   block.properties.sum = 0
+      //   block.properties.single_p = 0
+      //   block.properties.multiple_p = 0
+      //   block.properties.dormi_p = 0
+      //   block.properties.mixed_p = 0
+      //   block.properties.commercial_p = 0
+      //   block.properties.public_p = 0
+      //   block.properties.tech_p = 0
+      //   block.properties.utility_p = 0
+      //   block.properties.sum_p = 0
+      //   const candidates: FeatureCollection<Geometry, GeoJsonProperties>  = tree.search(block)
+      //   candidates?.features.map((building) => {
+      //     if (booleanIntersection(building,block) && building.properties) {
+      //       block.properties.fa += building.properties.sqr * building.properties.lvl
+      //       block.properties.ba += building.properties.sqr
+      //       if (building.properties.building_2 === 'detached_house') {
+      //         block.properties.single += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+      //       }
+      //       if (building.properties.building_2 === 'apartments') {
+      //         block.properties.multiple += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+      //       }
+      //       if (building.properties.building_2 === 'dormitory') {
+      //         block.properties.dormi += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+      //       }
+      //       if (building.properties.building_2 === 'mixed') {
+      //         block.properties.commercial += far ? building.properties.sqr : building.properties.sqr*0.5
+      //         block.properties.residential += far ? building.properties.sqr * (building.properties.lvl-1) : building.properties.sqr*0.5
+      //       }
+      //       if (building.properties.building_2 === 'commercial') {
+      //         block.properties.commercial += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+      //       }
+      //       if (building.properties.building_2 === 'public') {
+      //         block.properties.public += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+      //       }
+      //       if (building.properties.building_2 === 'industrial') {
+      //         block.properties.tech += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+      //       }
+      //       if (building.properties.building_2 === 'utility') {
+      //         block.properties.utility += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+      //       }
+      //     }
+      //   })
+      //   const prev_candidates: FeatureCollection<Geometry, GeoJsonProperties>  = prevtree.search(block)
+      //   prev_candidates?.features.map((building) => {
+      //     if (booleanIntersection(building,block) && building.properties) {
+      //       block.properties.fa_p += building.properties.sqr * building.properties.lvl
+      //       block.properties.ba_p += building.properties.sqr
+      //       if (building.properties.building_2 === 'detached_house') {
+      //         block.properties.single_p += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+      //       }
+      //       if (building.properties.building_2 === 'apartments') {
+      //         block.properties.multiple_p += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+      //       }
+      //       if (building.properties.building_2 === 'dormitory') {
+      //         block.properties.dormi_p += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+      //       }
+      //       if (building.properties.building_2 === 'mixed') {
+      //         block.properties.commercial_p += far ? building.properties.sqr : building.properties.sqr*0.5
+      //         block.properties.residential_p += far ? building.properties.sqr * (building.properties.lvl-1) : building.properties.sqr*0.5
+      //       }
+      //       if (building.properties.building_2 === 'commercial') {
+      //         block.properties.commercial_p += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+      //       }
+      //       if (building.properties.building_2 === 'public') {
+      //         block.properties.public_p += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+      //       }
+      //       if (building.properties.building_2 === 'industrial') {
+      //         block.properties.tech_p += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+      //       }
+      //       if (building.properties.building_2 === 'utility') {
+      //         block.properties.utility_p += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+      //       }
+      //     }
+      //   })
+      //   block.properties.sum = 
+      //   +block.properties.single+block.properties.multiple+block.properties.dormi+block.properties.mixed
+      //   +block.properties.commercial+block.properties.public+block.properties.tech+block.properties.utility
+      //   if (blockFid && blockFid === block.properties.fid) {
+      //     console.log('reset')
+      //     setBlockStat({...block.properties})
+      //   }
+      //   const usageArray = [
+      //     block.properties.single, 
+      //     block.properties.multiple, 
+      //     block.properties.dormi,
+      //     block.properties.mixed,
+      //     block.properties.commercial,
+      //     block.properties.public,
+      //     block.properties.tech,
+      //     block.properties.utility
+      //   ]
+      //   const mxiArray = [
+      //     block.properties.single+block.properties.multiple+block.properties.dormi,
+      //     block.properties.commercial,block.properties.public,
+      //     block.properties.tech+block.properties.utility
+      //   ]
+      //   const mxiArray_p = [
+      //     block.properties.single_p+block.properties.multiple_p+block.properties.dormi_p,
+      //     block.properties.commercial_p,block.properties.public_p,
+      //     block.properties.tech_p+block.properties.utility_p
+      //   ]
+      //   block.properties.mxi = Number(simpsonsIndex(mxiArray))
+      //   block.properties.mxi_p = Number(simpsonsIndex(mxiArray_p))
+      //   block.properties.mxi_d = block.properties.mxi-block.properties.mxi_p
+      //   block.properties.far = block.properties.fa/block.properties.sqr
+      //   block.properties.far_p = block.properties.fa_p/block.properties.sqr
+      //   block.properties.far_d = block.properties.far-block.properties.far_p
+      //   const i = indexOfMax(usageArray)
+      //   block.properties.usage = i+1
+      //   if (usageArray[i] === 0) {
+      //     block.properties.usage = 0
+      //   }
+      // }
+      // if (mode==='development') {
+      //   block.properties.single = 0
+      //   block.properties.multiple = 0
+      //   block.properties.dormi = 0
+      //   block.properties.mixed = 0
+      //   block.properties.commercial = 0
+      //   block.properties.public = 0
+      //   block.properties.tech = 0
+      //   block.properties.utility = 0
+      //   block.properties.sum = 0
+      //   block.properties.single_p = 0
+      //   block.properties.multiple_p = 0
+      //   block.properties.dormi_p = 0
+      //   block.properties.mixed_p = 0
+      //   block.properties.commercial_p = 0
+      //   block.properties.public_p = 0
+      //   block.properties.tech_p = 0
+      //   block.properties.utility_p = 0
+      //   block.properties.sum_p = 0
+      //   const candidates: FeatureCollection<Geometry, GeoJsonProperties>  = tree.search(block)
+      //   candidates?.features.map((building) => {
+      //     if (booleanIntersection(building,block) && building.properties) {
+      //       block.properties.fa += building.properties.sqr * building.properties.lvl
+      //       block.properties.ba += building.properties.sqr
+      //       if (building.properties.building_2 === 'detached_house') {
+      //         block.properties.single += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+      //       }
+      //       if (building.properties.building_2 === 'apartments') {
+      //         block.properties.multiple += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+      //       }
+      //       if (building.properties.building_2 === 'dormitory') {
+      //         block.properties.dormi += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+      //       }
+      //       if (building.properties.building_2 === 'mixed') {
+      //         block.properties.commercial += far ? building.properties.sqr : building.properties.sqr*0.5
+      //         block.properties.residential += far ? building.properties.sqr * (building.properties.lvl-1) : building.properties.sqr*0.5
+      //       }
+      //       if (building.properties.building_2 === 'commercial') {
+      //         block.properties.commercial += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+      //       }
+      //       if (building.properties.building_2 === 'public') {
+      //         block.properties.public += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+      //       }
+      //       if (building.properties.building_2 === 'industrial') {
+      //         block.properties.tech += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+      //       }
+      //       if (building.properties.building_2 === 'utility') {
+      //         block.properties.utility += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+      //       }
+      //     }
+      //   })
+      //   const prev_candidates: FeatureCollection<Geometry, GeoJsonProperties>  = prevtree.search(block)
+      //   prev_candidates?.features.map((building) => {
+      //     if (booleanIntersection(building,block) && building.properties) {
+      //       block.properties.fa_p += building.properties.sqr * building.properties.lvl
+      //       block.properties.ba_p += building.properties.sqr
+      //       if (building.properties.building_2 === 'detached_house') {
+      //         block.properties.single_p += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+      //       }
+      //       if (building.properties.building_2 === 'apartments') {
+      //         block.properties.multiple_p += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+      //       }
+      //       if (building.properties.building_2 === 'dormitory') {
+      //         block.properties.dormi_p += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+      //       }
+      //       if (building.properties.building_2 === 'mixed') {
+      //         block.properties.commercial_p += far ? building.properties.sqr : building.properties.sqr*0.5
+      //         block.properties.residential_p += far ? building.properties.sqr * (building.properties.lvl-1) : building.properties.sqr*0.5
+      //       }
+      //       if (building.properties.building_2 === 'commercial') {
+      //         block.properties.commercial_p += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+      //       }
+      //       if (building.properties.building_2 === 'public') {
+      //         block.properties.public_p += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+      //       }
+      //       if (building.properties.building_2 === 'industrial') {
+      //         block.properties.tech_p += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+      //       }
+      //       if (building.properties.building_2 === 'utility') {
+      //         block.properties.utility_p += far ? building.properties.sqr * building.properties.lvl : building.properties.sqr
+      //       }
+      //     }
+      //   })
+      //   block.properties.sum = 
+      //   +block.properties.single+block.properties.multiple+block.properties.dormi+block.properties.mixed
+      //   +block.properties.commercial+block.properties.public+block.properties.tech+block.properties.utility
+      //   if (blockFid && blockFid === block.properties.fid) {
+      //     console.log('reset')
+      //     setBlockStat({...block.properties})
+      //   }
+      //   const usageArray = [
+      //     block.properties.single, 
+      //     block.properties.multiple, 
+      //     block.properties.dormi,
+      //     block.properties.mixed,
+      //     block.properties.commercial,
+      //     block.properties.public,
+      //     block.properties.tech,
+      //     block.properties.utility
+      //   ]
+      //   const mxiArray = [
+      //     block.properties.single+block.properties.multiple+block.properties.dormi,
+      //     block.properties.commercial,block.properties.public,
+      //     block.properties.tech+block.properties.utility
+      //   ]
+      //   const mxiArray_p = [
+      //     block.properties.single_p+block.properties.multiple_p+block.properties.dormi_p,
+      //     block.properties.commercial_p,block.properties.public_p,
+      //     block.properties.tech_p+block.properties.utility_p
+      //   ]
+      //   block.properties.mxi = Number(simpsonsIndex(mxiArray))
+      //   block.properties.mxi_p = Number(simpsonsIndex(mxiArray_p))
+      //   block.properties.mxi_d = block.properties.mxi-block.properties.mxi_p
+      //   block.properties.far = block.properties.fa/block.properties.sqr
+      //   block.properties.far_p = block.properties.fa_p/block.properties.sqr
+      //   block.properties.far_d = block.properties.far-block.properties.far_p
+      //   const i = indexOfMax(usageArray)
+      //   block.properties.usage = i+1
+      //   if (usageArray[i] === 0) {
+      //     block.properties.usage = 0
+      //   }
+      // }
       return block
     })
     if (upd_features) {
@@ -1167,51 +1166,51 @@ function App() {
         setMatrixCount(blockCount)
 
       }
-      if (mode === 'development') {
-          const blockCount = {
-            0: 0, 1: 0, 2: 0,
-            3: 0, 4: 0, 5: 0,
-            6: 0, 7: 0, 8: 0
-        }
-        if (upd_features) {upd_features.map((block: GeoJSONFeature) => {
-            console.log('calc')
-            if (block.properties['mxi_d'] < 0) {
-                if (block.properties['far_d'] < 0) {
-                    blockCount[0]+=block.properties['sqr']
-                }
-                if (block.properties['far_d'] === 0) {
-                    blockCount[1]+=block.properties['sqr']
-                }
-                if (block.properties['far_d'] > 0) {
-                    blockCount[2]+=block.properties['sqr']
-                }
-            }
-            if (block.properties['mxi_d'] === 0) {
-                if (block.properties['far_d'] < 0) {
-                    blockCount[3]+=block.properties['sqr']
-                }
-                if (block.properties['far_d'] === 0) {
-                    blockCount[4]+=block.properties['sqr']
-                }
-                if (block.properties['far_d'] > 0) {
-                    blockCount[5]+=block.properties['sqr']
-                }
-            }
-            if (block.properties['mxi_d'] > 0) {
-                if (block.properties['far_d'] < 0) {
-                    blockCount[6]+=block.properties['sqr']
-                }
-                if (block.properties['far_d'] === 0) {
-                    blockCount[7]+=block.properties['sqr']
-                }
-                if (block.properties['far_d'] > 0) {
-                    blockCount[8]+=block.properties['sqr']
-                }
-            }
-        })}
-        setDevMatrixCount(blockCount)
+      // if (mode === 'development') {
+      //     const blockCount = {
+      //       0: 0, 1: 0, 2: 0,
+      //       3: 0, 4: 0, 5: 0,
+      //       6: 0, 7: 0, 8: 0
+      //   }
+      //   if (upd_features) {upd_features.map((block: GeoJSONFeature) => {
+      //       console.log('calc')
+      //       if (block.properties['mxi_d'] < 0) {
+      //           if (block.properties['far_d'] < 0) {
+      //               blockCount[0]+=block.properties['sqr']
+      //           }
+      //           if (block.properties['far_d'] === 0) {
+      //               blockCount[1]+=block.properties['sqr']
+      //           }
+      //           if (block.properties['far_d'] > 0) {
+      //               blockCount[2]+=block.properties['sqr']
+      //           }
+      //       }
+      //       if (block.properties['mxi_d'] === 0) {
+      //           if (block.properties['far_d'] < 0) {
+      //               blockCount[3]+=block.properties['sqr']
+      //           }
+      //           if (block.properties['far_d'] === 0) {
+      //               blockCount[4]+=block.properties['sqr']
+      //           }
+      //           if (block.properties['far_d'] > 0) {
+      //               blockCount[5]+=block.properties['sqr']
+      //           }
+      //       }
+      //       if (block.properties['mxi_d'] > 0) {
+      //           if (block.properties['far_d'] < 0) {
+      //               blockCount[6]+=block.properties['sqr']
+      //           }
+      //           if (block.properties['far_d'] === 0) {
+      //               blockCount[7]+=block.properties['sqr']
+      //           }
+      //           if (block.properties['far_d'] > 0) {
+      //               blockCount[8]+=block.properties['sqr']
+      //           }
+      //       }
+      //   })}
+      //   setDevMatrixCount(blockCount)
 
-      }
+      // }
       setNewBlocks({
         type: 'FeatureCollection', 
         name: `${Date.now().toString()}`, 
@@ -1606,6 +1605,12 @@ function App() {
   },[mode,far])
 
   useEffect(() => {
+    if (mode === 'matrix') {
+      setBlockMode(true)
+    }
+  },[mode])
+
+  useEffect(() => {
     if(selectedBlock) {
       if (
         selectedBlock.properties.year_formed > debouncedEpoque[1] || 
@@ -1628,7 +1633,7 @@ function App() {
       </div>
       <div style={{width: '100vw', height: '84vh', display: 'flex', flexDirection: 'row'}}>
         {(left || articleMode) && <div style={{minWidth: '25%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', backgroundColor: '#141414', transition: 'width 0.5s ease'}}>
-          <div style={{marginBottom: 10, display: 'flex', flexDirection: 'row', alignItems: 'center'}}>
+          <div style={{marginBottom: 10, display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '10px'}}>
               <Select 
                 style={{width: 200}} 
                 onChange={(value: string) => setMode(value)}
@@ -1636,15 +1641,20 @@ function App() {
               />
               <Switch 
                 value={far} onChange={setFar}
-                style={{fontSize: '2em', marginLeft: '10px'}}
+                style={{fontSize: '2em'}}
                 checkedChildren={<b>FSI</b>} unCheckedChildren={<b>GSI</b>} 
               />
+              <Button disabled={mode !== 'matrix'} className='fscBtn' onClick={() => setFullSc(!fullSc)}>
+                {fullSc ? <FullscreenExitOutlined/>:<FullscreenOutlined/>}
+              </Button>
           </div>
 
 
-          <div style={{ display: 'flex', alignItems: 'flex-start' }}>
+          {((mode !== 'matrix') || !fullSc) && <div style={{ display: 'flex', alignItems: 'flex-start' }}>
             {/* Left column - Doughnut with centered value and bottom text */}
-            {mode!='development'&&<div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginRight: '16px' }}>
+            
+            
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginRight: '16px' }}>
               <div style={{ position: 'relative', width: '160px', height: '160px' }}>
                 <Doughnut id='doughnut' options={doughnutOptions} data={data} />
                 <div style={{
@@ -1655,13 +1665,10 @@ function App() {
                   textAlign: 'center',
                 }}>
                   <div 
-                    style={{ 
-                      fontSize: '24px', fontWeight: 'bold', 
-                      // border: '1px solid red', 
-                      borderRadius: '100%', 
-                      height: '60px', width: '60px', alignContent: 'center',
-                      backgroundColor: mxi ?'#d8d8d8ff':'black', color: mxi ? 'black':'white'
+                    style={{
+                      backgroundColor: mxi ?'#d8d8d8ff':'rgba(0, 0, 0, 0.1)', color: mxi ? 'black':'white'
                     }}
+                    className='disc'
                     onClick={onIndexClick}
                   >
                     {diversityIndex}
@@ -1672,9 +1679,8 @@ function App() {
               <div style={{ fontSize: '14px', color: '#999', marginTop: '8px' }}>
                 {footnote}
               </div>
-            </div>}
-            {  
-              mode === 'development' && <div  style={{display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
+            </div>
+            {mode === 'development' && <div  style={{display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
                 <span style={{ marginTop: '10px'}}>
                   Изменения за предыдущие
                 </span>
@@ -1697,7 +1703,7 @@ function App() {
             }
 
   {/* Right column - Primary and secondary values */}
-            {mode!='development'&&<div style={{ marginLeft: '16px', marginTop: '22px'}}>
+            <div style={{ marginLeft: '16px', marginTop: '22px'}}>
               <div style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '4px', marginTop: '6px' }}>
                 {blockFid ? <span>Квартал №{blockFid}</span> : <span>Все кварталы</span>}
               </div>
@@ -1713,8 +1719,8 @@ function App() {
               <div style={{ fontSize: '14px' }}>
                   площадь земель
               </div>
-            </div>}
-          </div>
+            </div>
+          </div>}
           {(mode === 'year'|| mode === 'usage') && 
             <div style={{ width: '100%', height: '360px' }}>
               {mode === 'usage' && <MScale/>}
@@ -1733,14 +1739,23 @@ function App() {
           }
           {mode === 'matrix' &&
             <div style={{width: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center'}}>
-              <SpaceMatrix matrixCount={matrixCount} />
+              {!fullSc && <SpaceMatrix matrixCount={matrixCount} />}
+              {fullSc && <MatrixChart 
+                data={new_blocks} 
+                blockFid={blockFid}
+                selectedBlock={selectedBlock}
+                setSelectedBlock={setSelectedBlock}
+                setBlockFid={setBlockFid}
+                setBlockStat={setBlockStat}
+              />}
+              {/* <MinimalZoomableCanvas data={new_blocks} /> */}
             </div>
           }
-          {mode === 'development' &&
+          {/* {mode === 'development' &&
             <div style={{width: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center'}}>
               <DevMatrix matrixCount={devMatrixCount} />
             </div>
-          }
+          } */}
           
         </div>}
         <Map
@@ -1810,13 +1825,14 @@ function App() {
           </Button>}
           <Button 
             style={{position: 'absolute', bottom: '50px', right: '10px', height: '40px', width: '100px'}}
-            onClick={toggleBlockMode} size='large' type={!blockMode ? 'default' : 'primary'}
+            onClick={() => setBlockMode(true)} size='large' type={!blockMode ? 'default' : 'primary'}
           >
             <b>Кварталы</b>
           </Button>
-          <Button 
+          <Button
+            disabled={mode==='matrix'}
             style={{position: 'absolute', bottom: '10px', right: '10px', height: '40px', width: '100px'}}
-            onClick={toggleBlockMode} size='large' type={blockMode ? 'default' : 'primary'}
+            onClick={() => setBlockMode(false)} size='large' type={blockMode ? 'default' : 'primary'}
           >
             <b>Здания</b>
           </Button>
